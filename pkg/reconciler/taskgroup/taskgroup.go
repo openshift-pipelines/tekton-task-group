@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"reflect"
-	"strconv"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
@@ -28,6 +27,7 @@ import (
 	"gomodules.xyz/jsonpatch/v2"
 	"k8s.io/client-go/kubernetes"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/kmeta"
 	// corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -166,9 +166,6 @@ func (c *Reconciler) reconcile(ctx context.Context, run *v1alpha1.Run, status *t
 		return err
 	}
 
-	logger.Infof("meta: %+v", taskGroupMeta)
-	logger.Infof("spec: %+v", taskGroupSpec)
-
 	// Store the fetched TaskGroupSpec on the Run for auditing
 	storeTaskGroupSpec(status, taskGroupSpec)
 
@@ -183,15 +180,36 @@ func (c *Reconciler) reconcile(ctx context.Context, run *v1alpha1.Run, status *t
 		return nil
 	}
 
-	// Create a TaskRun, with embedded spec based on multiple Tasks
-	tr, err := c.createTaskRun(ctx, logger, taskGroupSpec, run)
+	taskRunDone, taskRunFailed, err := c.updateTaskRunStatus(ctx, logger, run, status, taskGroupSpec)
 	if err != nil {
-		run.Status.MarkRunFailed(taskgroupv1alpha1.TaskGroupRunReasonFailedValidation.String(),
-			"TaskGroup %s/%s can't be Run; failed to create TaskRun: %s",
-			taskGroupMeta.Namespace, taskGroupMeta.Name, err)
-		return nil
+		return fmt.Errorf("error updating TaskRun status for Run %s/%s: %w", run.Namespace, run.Name, err)
 	}
-	logger.Infof("TaskRun %+v", tr)
+	if taskRunDone {
+		if taskRunFailed {
+			run.Status.MarkRunFailed(taskgroupv1alpha1.TaskGroupRunReasonFailed.String(),
+				"TaskRun failed")
+			return nil
+		} else {
+			run.Status.MarkRunSucceeded(taskgroupv1alpha1.TaskGroupRunReasonSucceeded.String(),
+				"TaskRun succeeded")
+			return nil
+		}
+	} else {
+		run.Status.MarkRunRunning(taskgroupv1alpha1.TaskGroupRunReasonRunning.String(),
+			"%s running", run.Name)
+	}
+
+	if status.TaskRun == nil {
+		// Create a TaskRun, with embedded spec based on multiple Tasks
+		tr, err := c.createTaskRun(ctx, logger, taskGroupSpec, run)
+		if err != nil {
+			run.Status.MarkRunFailed(taskgroupv1alpha1.TaskGroupRunReasonFailedValidation.String(),
+				"TaskGroup %s/%s can't be Run; failed to create TaskRun: %s",
+				taskGroupMeta.Namespace, taskGroupMeta.Name, err)
+			return nil
+		}
+		status.TaskRun = &tr.Status
+	}
 
 	return nil
 }
@@ -247,11 +265,11 @@ func (c *Reconciler) createTaskRun(ctx context.Context, logger *zap.SugaredLogge
 
 	tr := &v1beta1.TaskRun{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      trName,
-			Namespace: run.Namespace,
-			// OwnerReferences: []metav1.OwnerReference{run.GetOwnerReference()},
-			Labels:      getTaskRunLabels(run, "", true),
-			Annotations: getTaskRunAnnotations(run),
+			Name:            trName,
+			Namespace:       run.Namespace,
+			OwnerReferences: append(run.GetOwnerReferences(), *kmeta.NewControllerRef(run)),
+			Labels:          getTaskRunLabels(run, true),
+			Annotations:     getTaskRunAnnotations(run),
 		},
 		Spec: v1beta1.TaskRunSpec{
 			// Params:             getParameters(run, tls, iteration),
@@ -275,7 +293,7 @@ func (c *Reconciler) resolveSteps(ctx context.Context, logger *zap.SugaredLogger
 		return nil, err
 	}
 
-	taskMeta, taskSpec, err := resources.GetTaskData(ctx, &v1beta1.TaskRun{
+	_, taskSpec, err := resources.GetTaskData(ctx, &v1beta1.TaskRun{
 		Spec: v1beta1.TaskRunSpec{TaskRef: &uses.TaskRef},
 	}, getTaskfunc)
 	if err != nil {
@@ -287,9 +305,6 @@ func (c *Reconciler) resolveSteps(ctx context.Context, logger *zap.SugaredLogger
 			"Error getting task %s: %#v", uses.TaskRef.Name, err)
 		return nil, controller.NewPermanentError(err)
 	}
-
-	logger.Infof("taskMeta: %+v", taskMeta)
-	logger.Infof("taskSpec: %+v", taskSpec)
 
 	steps := make([]v1beta1.Step, len(taskSpec.Steps))
 	for i, s := range taskSpec.Steps {
@@ -323,16 +338,13 @@ func (c *Reconciler) updateLabelsAndAnnotations(ctx context.Context, run *v1alph
 }
 
 func (c *Reconciler) updateTaskRunStatus(ctx context.Context, logger *zap.SugaredLogger, run *v1alpha1.Run, status *taskgroupv1alpha1.TaskGroupRunStatus,
-	taskGroupSpec *taskgroupv1alpha1.TaskGroupSpec) (totalRunning int, highestIteration int, taskRunFailed bool, retryableErr error) {
-	if status.TaskRuns == nil {
-		status.TaskRuns = make(map[string]*taskgroupv1alpha1.TaskGroupTaskRunStatus)
-	}
+	taskGroupSpec *taskgroupv1alpha1.TaskGroupSpec) (taskRunDone bool, taskRunFailed bool, retryableErr error) {
 	// List TaskRuns associated with this Run.  These TaskRuns should be recorded in the Run status but it's
 	// possible that this reconcile call has been passed stale status which doesn't include a previous update.
 	// Find the TaskRuns by matching labels.  Do not include the propagated labels from the Run.
 	// The user could change them during the lifetime of the Run so the current labels may not be set on the
 	// previously created TaskRuns.
-	taskRunLabels := getTaskRunLabels(run, "", false)
+	taskRunLabels := getTaskRunLabels(run, false)
 	taskRuns, err := c.taskRunLister.TaskRuns(run.Namespace).List(labels.SelectorFromSet(taskRunLabels))
 	if err != nil {
 		retryableErr = fmt.Errorf("could not list TaskRuns %#v", err)
@@ -341,44 +353,34 @@ func (c *Reconciler) updateTaskRunStatus(ctx context.Context, logger *zap.Sugare
 	if taskRuns == nil || len(taskRuns) == 0 {
 		return
 	}
-	for _, tr := range taskRuns {
-		lbls := tr.GetLabels()
-		iterationStr := lbls[taskgroup.GroupName+taskGroupIterationLabelKey]
-		iteration, err := strconv.Atoi(iterationStr)
-		if err != nil {
-			logger.Errorf("Error converting iteration number in TaskRun %s:  %#v", tr.Name, err)
-			run.Status.MarkRunFailed(taskgroupv1alpha1.TaskGroupRunReasonFailedValidation.String(),
-				"Error converting iteration number in TaskRun %s:  %#v", tr.Name, err)
-			return
-		}
-		status.TaskRuns[tr.Name] = &taskgroupv1alpha1.TaskGroupTaskRunStatus{
-			Iteration: iteration,
-			Status:    &tr.Status,
-		}
-		// If the TaskRun was created before the Run says it was started, then change the Run's
-		// start time.  This happens when this reconcile call has been passed stale status that
-		// doesn't have the start time set.  The reconcile call will set a new start time that
-		// is later than TaskRuns it previously created.  The Run start time is adjusted back
-		// to compensate for this problem.
-		if tr.CreationTimestamp.Before(run.Status.CompletionTime) {
-			run.Status.CompletionTime = tr.CreationTimestamp.DeepCopy()
-		}
-		// Handle TaskRun cancellation and retry.
-		if err := c.processTaskRun(ctx, logger, tr, run, status, taskGroupSpec); err != nil {
-			retryableErr = fmt.Errorf("error processing TaskRun %s: %#v", tr.Name, err)
-			return
-		}
-		if iteration > highestIteration {
-			highestIteration = iteration
-		}
-		if !tr.IsDone() {
-			totalRunning++
-		} else {
-			if !tr.IsSuccessful() {
-				taskRunFailed = true
-			}
+	if len(taskRuns) > 1 {
+		retryableErr = fmt.Errorf("Multiple taskRuns, this is a problem")
+		return
+	}
+	tr := taskRuns[0]
+
+	// lbls := tr.GetLabels()
+	status.TaskRun = &tr.Status
+	// If the TaskRun was created before the Run says it was started, then change the Run's
+	// start time.  This happens when this reconcile call has been passed stale status that
+	// doesn't have the start time set.  The reconcile call will set a new start time that
+	// is later than TaskRuns it previously created.  The Run start time is adjusted back
+	// to compensate for this problem.
+	if tr.CreationTimestamp.Before(run.Status.CompletionTime) {
+		run.Status.CompletionTime = tr.CreationTimestamp.DeepCopy()
+	}
+	// Handle TaskRun cancellation and retry.
+	if err := c.processTaskRun(ctx, logger, tr, run, status, taskGroupSpec); err != nil {
+		retryableErr = fmt.Errorf("error processing TaskRun %s: %#v", tr.Name, err)
+		return
+	}
+	if tr.IsDone() {
+		taskRunDone = true
+		if !tr.IsSuccessful() {
+			taskRunFailed = true
 		}
 	}
+
 	return
 }
 
@@ -405,7 +407,7 @@ func getTaskRunAnnotations(run *v1alpha1.Run) map[string]string {
 	return annotations
 }
 
-func getTaskRunLabels(run *v1alpha1.Run, iterationStr string, includeRunLabels bool) map[string]string {
+func getTaskRunLabels(run *v1alpha1.Run, includeRunLabels bool) map[string]string {
 	// Propagate labels from Run to TaskRun.
 	labels := make(map[string]string, len(run.ObjectMeta.Labels)+1)
 	if includeRunLabels {
@@ -415,9 +417,6 @@ func getTaskRunLabels(run *v1alpha1.Run, iterationStr string, includeRunLabels b
 	}
 	// Note: The Run label uses the normal Tekton group name.
 	labels[pipeline.GroupName+taskGroupRunLabelKey] = run.Name
-	if iterationStr != "" {
-		labels[taskgroup.GroupName+taskGroupIterationLabelKey] = iterationStr
-	}
 	return labels
 }
 

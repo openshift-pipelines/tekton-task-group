@@ -101,17 +101,8 @@ func (t TaskGroupRunReason) String() string {
 // TaskGroupRunStatus contains the status stored in the ExtraFields of a Run that references a TaskGroup.
 type TaskGroupRunStatus struct {
 	// TaskGroupSpec contains the exact spec used to instantiate the Run
+	// FIXME(vdemeester) can probably remove
 	TaskGroupSpec *TaskGroupSpec `json:"taskLoopSpec,omitempty"`
-	// map of TaskGroupTaskRunStatus with the taskRun name as the key
 	// +optional
-	TaskRuns map[string]*TaskGroupTaskRunStatus `json:"taskRuns,omitempty"`
-}
-
-// TaskGroupTaskRunStatus contains the iteration number for a TaskRun and the TaskRun's Status
-type TaskGroupTaskRunStatus struct {
-	// iteration number
-	Iteration int `json:"iteration,omitempty"`
-	// Status is the TaskRunStatus for the corresponding TaskRun
-	// +optional
-	Status *v1beta1.TaskRunStatus `json:"status,omitempty"`
+	TaskRun *v1beta1.TaskRunStatus `json:"status,omitempty"`
 }

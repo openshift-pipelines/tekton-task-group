@@ -1,3 +1,19 @@
+apiVersion: custom.tekton.dev/v1alpha1
+kind: TaskGroup
+metadata:
+  name: foo
+spec:
+  steps:
+  - name: clone
+    uses:
+      taskRef:
+        name: my-git-clone
+  - name: build
+    image: docker.io/library/golang:latest
+    script: |
+      ls -l /workspace; ls -l /workspace/foo; true
+      cd /workspace/foo && go build -v ./cmd/tkn-local
+---
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
@@ -5,19 +21,8 @@ metadata:
 spec:
   pipelineSpec:
     tasks:
-    - name: task-group
-      taskSpec:
-        apiVersion: custom.tekton.dev/v1alpha1
-        kind: TaskGroup
-        spec:
-          spec:
-            steps:
-            - name: clone
-              uses:
-                taskRef:
-                  name: my-git-clone
-            - name: build
-              image: docker.io/library/golang:latest
-              script: |
-                ls -l /workspace; ls -l /workspace/foo; true
-                cd /workspace/foo && go build -v ./cmd/tkn-local
+      - name: task-group
+        taskRef:
+          apiVersion: custom.tekton.dev/v1alpha1
+          kind: TaskGroup
+          name: foo
