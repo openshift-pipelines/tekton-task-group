@@ -1,0 +1,27 @@
+apiVersion: custom.tekton.dev/v1alpha1
+kind: TaskGroup
+metadata:
+  name: foo
+spec:
+  steps:
+  - name: clone
+    uses:
+      taskRef:
+        name: my-git-clone
+  - name: build
+    image: docker.io/library/golang:latest
+    script: |
+      ls -l /workspace; ls -l /workspace/foo; true
+      cd /workspace/foo && go build -v ./cmd/tkn-local
+---
+apiVersion: tekton.dev/v1alpha1
+kind: Run
+metadata:
+  name: my-run
+spec:
+  spec:
+    apiVersion: custom.tekton.dev/v1alpha1
+    kind: TaskGroup
+    spec:
+      ref:
+        name: foo

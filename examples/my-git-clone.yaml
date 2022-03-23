@@ -1,0 +1,10 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: my-git-clone
+spec:
+  steps:
+  - name: clone
+    image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.21.0
+    script: |
+      /ko-app/git-init -url=https://github.com/vdemeester/buildkit-tekton -revision=main -path=/workspace/foo
