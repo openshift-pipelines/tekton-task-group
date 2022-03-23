@@ -13,6 +13,7 @@ import (
 	taskgroupclient "github.com/vdemeester/tekton-task-group/pkg/client/injection/client"
 	taskgroupinformer "github.com/vdemeester/tekton-task-group/pkg/client/injection/informers/taskgroup/v1alpha1/taskgroup"
 	"k8s.io/client-go/tools/cache"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
@@ -23,6 +24,7 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
 
 		logger := logging.FromContext(ctx)
+		kubeclientset := kubeclient.Get(ctx)
 		pipelineclientset := pipelineclient.Get(ctx)
 		taskgroupclientset := taskgroupclient.Get(ctx)
 		runInformer := runinformer.Get(ctx)
@@ -30,6 +32,7 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 		taskRunInformer := taskruninformer.Get(ctx)
 
 		c := &Reconciler{
+			kubeClientSet:      kubeclientset,
 			pipelineClientSet:  pipelineclientset,
 			taskgroupClientSet: taskgroupclientset,
 			runLister:          runInformer.Lister(),

@@ -19,9 +19,7 @@ kind: Run
 metadata:
   name: my-run
 spec:
-  spec:
+  ref:
     apiVersion: custom.tekton.dev/v1alpha1
     kind: TaskGroup
-    spec:
-      ref:
-        name: foo
+    name: foo

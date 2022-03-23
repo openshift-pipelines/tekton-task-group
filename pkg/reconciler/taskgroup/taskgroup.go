@@ -17,14 +17,17 @@ import (
 	runreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1alpha1/run"
 	listersalpha "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1alpha1"
 	listers "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1beta1"
-	// "github.com/tektoncd/pipeline/pkg/names"
+	"github.com/tektoncd/pipeline/pkg/names"
 	"github.com/tektoncd/pipeline/pkg/reconciler/events"
+	"github.com/tektoncd/pipeline/pkg/reconciler/taskrun/resources"
 	"github.com/vdemeester/tekton-task-group/pkg/apis/taskgroup"
 	taskgroupv1alpha1 "github.com/vdemeester/tekton-task-group/pkg/apis/taskgroup/v1alpha1"
 	taskgroupclientset "github.com/vdemeester/tekton-task-group/pkg/client/clientset/versioned"
 	listerstaskgroup "github.com/vdemeester/tekton-task-group/pkg/client/listers/taskgroup/v1alpha1"
 	"go.uber.org/zap"
 	"gomodules.xyz/jsonpatch/v2"
+	"k8s.io/client-go/kubernetes"
+	"knative.dev/pkg/controller"
 	// corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -48,6 +51,7 @@ const (
 // Reconciler implements controller.Reconciler for Configuration resources.
 type Reconciler struct {
 	pipelineClientSet  clientset.Interface
+	kubeClientSet      kubernetes.Interface
 	taskgroupClientSet taskgroupclientset.Interface
 	runLister          listersalpha.RunLister
 	taskGroupLister    listerstaskgroup.TaskGroupLister
@@ -179,6 +183,16 @@ func (c *Reconciler) reconcile(ctx context.Context, run *v1alpha1.Run, status *t
 		return nil
 	}
 
+	// Create a TaskRun, with embedded spec based on multiple Tasks
+	tr, err := c.createTaskRun(ctx, logger, taskGroupSpec, run)
+	if err != nil {
+		run.Status.MarkRunFailed(taskgroupv1alpha1.TaskGroupRunReasonFailedValidation.String(),
+			"TaskGroup %s/%s can't be Run; failed to create TaskRun: %s",
+			taskGroupMeta.Namespace, taskGroupMeta.Name, err)
+		return nil
+	}
+	logger.Infof("TaskRun %+v", tr)
+
 	return nil
 }
 
@@ -201,8 +215,6 @@ func (c *Reconciler) getTaskGroup(ctx context.Context, run *v1alpha1.Run) (*meta
 		taskGroupSpec = tl.Spec
 	} else if run.Spec.Spec != nil {
 		// FIXME(vdemeester) support embedded spec
-		taskGroupMeta = ""
-		taskGroupSpec = ""
 		// Run does not require name but for TaskGroup it does.
 		run.Status.MarkRunFailed(taskgroupv1alpha1.TaskGroupRunReasonCouldntGetTaskGroup.String(),
 			"Missing spec.ref.name for Run %s/%s",
@@ -212,40 +224,81 @@ func (c *Reconciler) getTaskGroup(ctx context.Context, run *v1alpha1.Run) (*meta
 	return &taskGroupMeta, &taskGroupSpec, nil
 }
 
-// func (c *Reconciler) createTaskRun(ctx context.Context, logger *zap.SugaredLogger, tls *taskgroupv1alpha1.TaskGroupSpec, run *v1alpha1.Run, iteration int) (*v1beta1.TaskRun, error) {
-//
-// 	// Create name for TaskRun from Run name plus iteration number.
-// 	trName := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix(fmt.Sprintf("%s-%s", run.Name, fmt.Sprintf("%05d", iteration)))
-//
-// 	tr := &v1beta1.TaskRun{
-// 		ObjectMeta: metav1.ObjectMeta{
-// 			Name:            trName,
-// 			Namespace:       run.Namespace,
-// 			// OwnerReferences: []metav1.OwnerReference{run.GetOwnerReference()},
-// 			Labels:          getTaskRunLabels(run, strconv.Itoa(iteration), true),
-// 			Annotations:     getTaskRunAnnotations(run),
-// 		},
-// 		Spec: v1beta1.TaskRunSpec{
-// 			Params:             getParameters(run, tls, iteration),
-// 			Timeout:            tls.Timeout,
-// 			ServiceAccountName: run.Spec.ServiceAccountName,
-// 			PodTemplate:        run.Spec.PodTemplate,
-// 			Workspaces:         run.Spec.Workspaces,
-// 		}}
-//
-// 	if tls.TaskRef != nil {
-// 		tr.Spec.TaskRef = &v1beta1.TaskRef{
-// 			Name: tls.TaskRef.Name,
-// 			Kind: tls.TaskRef.Kind,
-// 		}
-// 	} else if tls.TaskSpec != nil {
-// 		tr.Spec.TaskSpec = tls.TaskSpec
-// 	}
-//
-// 	logger.Infof("Creating a new TaskRun object %s", trName)
-// 	return c.pipelineClientSet.TektonV1beta1().TaskRuns(run.Namespace).Create(ctx, tr, metav1.CreateOptions{})
-//
-// }
+func (c *Reconciler) createTaskRun(ctx context.Context, logger *zap.SugaredLogger, tls *taskgroupv1alpha1.TaskGroupSpec, run *v1alpha1.Run) (*v1beta1.TaskRun, error) {
+	taskSpec := &v1beta1.TaskSpec{
+		Steps: []v1beta1.Step{},
+	}
+	// TODO: Merge params, workspaces, results, volumes, sidecars, steptemplate
+	for _, step := range tls.Steps {
+		logger.Infof("step: %+v", step)
+		if step.Uses != nil {
+			resolvedSteps, err := c.resolveSteps(ctx, logger, step.Name, step.Uses, run)
+			if err != nil {
+				return nil, err
+			}
+			taskSpec.Steps = append(taskSpec.Steps, resolvedSteps...)
+		} else {
+			taskSpec.Steps = append(taskSpec.Steps, step.Step)
+		}
+	}
+
+	// Create name for TaskRun from Run name plus iteration number.
+	trName := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix(run.Name)
+
+	tr := &v1beta1.TaskRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      trName,
+			Namespace: run.Namespace,
+			// OwnerReferences: []metav1.OwnerReference{run.GetOwnerReference()},
+			Labels:      getTaskRunLabels(run, "", true),
+			Annotations: getTaskRunAnnotations(run),
+		},
+		Spec: v1beta1.TaskRunSpec{
+			// Params:             getParameters(run, tls, iteration),
+			// Timeout:            tls.Timeout,
+			ServiceAccountName: run.Spec.ServiceAccountName,
+			PodTemplate:        run.Spec.PodTemplate,
+			Workspaces:         run.Spec.Workspaces,
+			TaskSpec:           taskSpec,
+		}}
+
+	logger.Infof("Creating a new TaskRun object %s", trName)
+	return c.pipelineClientSet.TektonV1beta1().TaskRuns(run.Namespace).Create(ctx, tr, metav1.CreateOptions{})
+}
+
+func (c *Reconciler) resolveSteps(ctx context.Context, logger *zap.SugaredLogger, name string, uses *taskgroupv1alpha1.Uses, run *v1alpha1.Run) ([]v1beta1.Step, error) {
+	getTaskfunc, err := resources.GetTaskFunc(ctx, c.kubeClientSet, c.pipelineClientSet, &uses.TaskRef, run.Namespace, run.Spec.ServiceAccountName)
+	if err != nil {
+		logger.Errorf("Failed to fetch task reference %s: %v", uses.TaskRef.Name, err)
+		run.Status.MarkRunFailed("foo",
+			"Error getting task %s: %#v", uses.TaskRef.Name, err)
+		return nil, err
+	}
+
+	taskMeta, taskSpec, err := resources.GetTaskData(ctx, &v1beta1.TaskRun{
+		Spec: v1beta1.TaskRunSpec{TaskRef: &uses.TaskRef},
+	}, getTaskfunc)
+	if err != nil {
+		logger.Errorf("Failed to fetch task reference %s: %v", uses.TaskRef.Name, err)
+		if resources.IsGetTaskErrTransient(err) {
+			return nil, err
+		}
+		run.Status.MarkRunFailed("foo",
+			"Error getting task %s: %#v", uses.TaskRef.Name, err)
+		return nil, controller.NewPermanentError(err)
+	}
+
+	logger.Infof("taskMeta: %+v", taskMeta)
+	logger.Infof("taskSpec: %+v", taskSpec)
+
+	steps := make([]v1beta1.Step, len(taskSpec.Steps))
+	for i, s := range taskSpec.Steps {
+		steps[i] = s
+		steps[i].Name = name + "-" + s.Name
+	}
+
+	return steps, nil
+}
 
 func (c *Reconciler) updateLabelsAndAnnotations(ctx context.Context, run *v1alpha1.Run) error {
 	newRun, err := c.runLister.Runs(run.Namespace).Get(run.Name)

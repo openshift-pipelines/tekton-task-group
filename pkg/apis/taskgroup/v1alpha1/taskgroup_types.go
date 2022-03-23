@@ -40,6 +40,18 @@ type TaskGroup struct {
 // TaskGroupSpec defines the desired state of the TaskGroup
 type TaskGroupSpec struct {
 	// FIXME(vdemeester): define a spec
+	Steps []Step `json:"steps"`
+}
+
+type Step struct {
+	v1beta1.Step `json:",inline"`
+
+	// +optional
+	Uses *Uses `json:"uses"`
+}
+
+type Uses struct {
+	TaskRef v1beta1.TaskRef `json:"taskRef"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
