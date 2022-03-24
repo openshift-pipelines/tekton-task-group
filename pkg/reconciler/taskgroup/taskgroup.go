@@ -161,7 +161,7 @@ func (c *Reconciler) reconcile(ctx context.Context, run *v1alpha1.Run, status *t
 	logger := logging.FromContext(ctx)
 
 	// Get the TaskGroup referenced by the Run
-	taskGroupMeta, taskGroupSpec, err := c.getTaskGroup(ctx, run)
+	taskGroupMeta, taskGroupSpec, err := c.getTaskGroup(ctx, logger, run)
 	if err != nil {
 		return err
 	}
@@ -214,7 +214,7 @@ func (c *Reconciler) reconcile(ctx context.Context, run *v1alpha1.Run, status *t
 	return nil
 }
 
-func (c *Reconciler) getTaskGroup(ctx context.Context, run *v1alpha1.Run) (*metav1.ObjectMeta, *taskgroupv1alpha1.TaskGroupSpec, error) {
+func (c *Reconciler) getTaskGroup(ctx context.Context, logger *zap.SugaredLogger, run *v1alpha1.Run) (*metav1.ObjectMeta, *taskgroupv1alpha1.TaskGroupSpec, error) {
 	taskGroupMeta := metav1.ObjectMeta{}
 	taskGroupSpec := taskgroupv1alpha1.TaskGroupSpec{}
 	if run.Spec.Ref != nil && run.Spec.Ref.Name != "" {
@@ -233,11 +233,12 @@ func (c *Reconciler) getTaskGroup(ctx context.Context, run *v1alpha1.Run) (*meta
 		taskGroupSpec = tl.Spec
 	} else if run.Spec.Spec != nil {
 		// FIXME(vdemeester) support embedded spec
-		// Run does not require name but for TaskGroup it does.
-		run.Status.MarkRunFailed(taskgroupv1alpha1.TaskGroupRunReasonCouldntGetTaskGroup.String(),
-			"Missing spec.ref.name for Run %s/%s",
-			run.Namespace, run.Name)
-		return nil, nil, fmt.Errorf("Missing spec.ref.name for Run %s", fmt.Sprintf("%s/%s", run.Namespace, run.Name))
+		if err := json.Unmarshal(run.Spec.Spec.Spec.Raw, &taskGroupSpec); err != nil {
+			run.Status.MarkRunFailed(taskgroupv1alpha1.TaskGroupRunReasonCouldntGetTaskGroup.String(),
+				"Error retrieving TaskGroup for Run %s/%s: %s",
+				run.Namespace, run.Name, err)
+			return nil, nil, fmt.Errorf("Error retrieving TaskGroup for Run %s: %w", fmt.Sprintf("%s/%s", run.Namespace, run.Name), err)
+		}
 	}
 	return &taskGroupMeta, &taskGroupSpec, nil
 }
