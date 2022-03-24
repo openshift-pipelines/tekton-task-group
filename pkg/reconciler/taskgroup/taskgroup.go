@@ -268,7 +268,7 @@ func (c *Reconciler) createTaskRun(ctx context.Context, logger *zap.SugaredLogge
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            trName,
 			Namespace:       run.Namespace,
-			OwnerReferences: append(run.GetOwnerReferences(), *kmeta.NewControllerRef(run)),
+			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(run)},
 			Labels:          getTaskRunLabels(run, true),
 			Annotations:     getTaskRunAnnotations(run),
 		},
