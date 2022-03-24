@@ -7,4 +7,4 @@ spec:
   - name: clone
     image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.21.0
     script: |
-      /ko-app/git-init -url=https://github.com/vdemeester/go-helloworld-app -revision=main -path=/workspace/foo
+      /ko-app/git-init -url=https://github.com/vdemeester/buildkit-tekton -revision=main -path=/workspace/foo
