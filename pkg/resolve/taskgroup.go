@@ -5,6 +5,7 @@ import (
 
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/vdemeester/tekton-task-group/pkg/apis/taskgroup/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type stepTransformer func(*v1beta1.Step) (*v1beta1.Step, error)
@@ -26,10 +27,13 @@ func TaskSpec(spec *v1alpha1.TaskGroupSpec, usedTaskSpecs map[int]v1beta1.TaskSp
 		Results:      spec.Results,
 		Sidecars:     spec.Sidecars,
 		StepTemplate: spec.StepTemplate,
+		Volumes:      spec.Volumes,
 	}
 	usedTaskSpecsParams := []v1beta1.ParamSpec{}
 	usedTaskSpecsWorkspaces := []v1beta1.WorkspaceDeclaration{}
 	usedTaskSpecResults := []v1beta1.TaskResult{}
+	usedTaskSpecSidecars := []v1beta1.Sidecar{}
+	usedTaskSpecVolumes := []corev1.Volume{}
 	for i, step := range spec.Steps {
 		if step.Uses != nil {
 			usedTaskSpec, ok := usedTaskSpecs[i]
@@ -68,6 +72,10 @@ func TaskSpec(spec *v1alpha1.TaskGroupSpec, usedTaskSpecs map[int]v1beta1.TaskSp
 			}
 			// Results
 			usedTaskSpecResults = append(usedTaskSpecResults, usedTaskSpec.Results...)
+			// Sidecars
+			usedTaskSpecSidecars = append(usedTaskSpecSidecars, usedTaskSpec.Sidecars...)
+			// Volumes
+			usedTaskSpecVolumes = append(usedTaskSpecVolumes, usedTaskSpec.Volumes...)
 			// Step
 			stepName := step.Name
 			if stepName == "" {
@@ -89,6 +97,8 @@ func TaskSpec(spec *v1alpha1.TaskGroupSpec, usedTaskSpecs map[int]v1beta1.TaskSp
 		mergeParams(usedTaskSpecsParams),
 		mergeWorkspaces(usedTaskSpecsWorkspaces),
 		mergeResults(usedTaskSpecResults),
+		mergeSidecars(usedTaskSpecSidecars),
+		mergeVolumes(usedTaskSpecVolumes),
 	} {
 		taskSpec, err := t(taskSpec)
 		if err != nil {
@@ -164,6 +174,46 @@ func mergeResults(utResults []v1beta1.TaskResult) taskSpecTransformer {
 			results = append(results, r)
 		}
 		spec.Results = results
+
+		return spec, nil
+	}
+}
+
+func mergeSidecars(utSidecars []v1beta1.Sidecar) taskSpecTransformer {
+	return func(spec *v1beta1.TaskSpec) (*v1beta1.TaskSpec, error) {
+		sidecars := []v1beta1.Sidecar{}
+		seenSidecarNames := map[string]v1beta1.Sidecar{}
+		for _, s := range spec.Sidecars {
+			seenSidecarNames[s.Name] = s
+			sidecars = append(sidecars, s)
+		}
+		for _, s := range utSidecars {
+			if _, ok := seenSidecarNames[s.Name]; ok {
+				return spec, fmt.Errorf("Duplicated sidecars: %s", s.Name)
+			}
+			sidecars = append(sidecars, s)
+		}
+		spec.Sidecars = sidecars
+
+		return spec, nil
+	}
+}
+
+func mergeVolumes(utVolumes []corev1.Volume) taskSpecTransformer {
+	return func(spec *v1beta1.TaskSpec) (*v1beta1.TaskSpec, error) {
+		volumes := []corev1.Volume{}
+		seenVolumeNames := map[string]corev1.Volume{}
+		for _, v := range spec.Volumes {
+			seenVolumeNames[v.Name] = v
+			volumes = append(volumes, v)
+		}
+		for _, v := range utVolumes {
+			if _, ok := seenVolumeNames[v.Name]; ok {
+				return spec, fmt.Errorf("Duplicated volumes: %s", v.Name)
+			}
+			volumes = append(volumes, v)
+		}
+		spec.Volumes = volumes
 
 		return spec, nil
 	}

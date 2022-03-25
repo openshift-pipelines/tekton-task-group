@@ -33,6 +33,8 @@ func TestTaskSpec(t *testing.T) {
 			Results:    []v1beta1.TaskResult{},
 			Params:     []v1beta1.ParamSpec{},
 			Workspaces: []v1beta1.WorkspaceDeclaration{},
+			Sidecars:   []v1beta1.Sidecar{},
+			Volumes:    []corev1.Volume{},
 			Steps: []v1beta1.Step{{
 				Container: corev1.Container{Image: "bash:latest"},
 				Script:    "echo foo",
@@ -64,6 +66,8 @@ func TestTaskSpec(t *testing.T) {
 			},
 		},
 		expected: &v1beta1.TaskSpec{
+			Sidecars:   []v1beta1.Sidecar{},
+			Volumes:    []corev1.Volume{},
 			Results:    []v1beta1.TaskResult{},
 			Params:     []v1beta1.ParamSpec{},
 			Workspaces: []v1beta1.WorkspaceDeclaration{},
@@ -111,6 +115,8 @@ func TestTaskSpec(t *testing.T) {
 			},
 		},
 		expected: &v1beta1.TaskSpec{
+			Sidecars:   []v1beta1.Sidecar{},
+			Volumes:    []corev1.Volume{},
 			Results:    []v1beta1.TaskResult{},
 			Workspaces: []v1beta1.WorkspaceDeclaration{},
 			Params: []v1beta1.ParamSpec{{
@@ -167,6 +173,8 @@ func TestTaskSpec(t *testing.T) {
 			},
 		},
 		expected: &v1beta1.TaskSpec{
+			Sidecars:   []v1beta1.Sidecar{},
+			Volumes:    []corev1.Volume{},
 			Results:    []v1beta1.TaskResult{},
 			Workspaces: []v1beta1.WorkspaceDeclaration{},
 			Params: []v1beta1.ParamSpec{{
@@ -222,6 +230,8 @@ func TestTaskSpec(t *testing.T) {
 			},
 		},
 		expected: &v1beta1.TaskSpec{
+			Sidecars:   []v1beta1.Sidecar{},
+			Volumes:    []corev1.Volume{},
 			Results:    []v1beta1.TaskResult{},
 			Workspaces: []v1beta1.WorkspaceDeclaration{},
 			Params: []v1beta1.ParamSpec{{
@@ -272,8 +282,10 @@ func TestTaskSpec(t *testing.T) {
 			},
 		},
 		expected: &v1beta1.TaskSpec{
-			Results: []v1beta1.TaskResult{},
-			Params:  []v1beta1.ParamSpec{},
+			Sidecars: []v1beta1.Sidecar{},
+			Volumes:  []corev1.Volume{},
+			Results:  []v1beta1.TaskResult{},
+			Params:   []v1beta1.ParamSpec{},
 			Workspaces: []v1beta1.WorkspaceDeclaration{{
 				Name: "ws1",
 			}},
@@ -319,6 +331,8 @@ func TestTaskSpec(t *testing.T) {
 			},
 		},
 		expected: &v1beta1.TaskSpec{
+			Sidecars: []v1beta1.Sidecar{},
+			Volumes:  []corev1.Volume{},
 			Results: []v1beta1.TaskResult{{
 				Name: "foo",
 			}, {
