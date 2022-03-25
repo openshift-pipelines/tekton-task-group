@@ -86,12 +86,18 @@ type Step struct {
 type Uses struct {
 	TaskRef v1beta1.TaskRef `json:"taskRef"`
 
-	ParamBindings []ParamBinding `json:"parambindings"`
+	ParamBindings     []ParamBinding     `json:"parambindings"`
+	WorkspaceBindings []WorkspaceBinding `json:"workspacebinding"`
 }
 
 type ParamBinding struct {
 	Name  string `json:"name"`
 	Param string `json:"param"`
+}
+
+type WorkspaceBinding struct {
+	Name      string `json:"name"`
+	Workspace string `json:"workspace"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
