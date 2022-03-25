@@ -59,8 +59,10 @@ func TaskSpec(spec *v1alpha1.TaskGroupSpec, usedTaskSpecs map[int]v1beta1.TaskSp
 			} else {
 				usedTaskSpecsWorkspaces = append(usedTaskSpecsWorkspaces, usedTaskSpec.Workspaces...)
 			}
-			bindings := bindings{params: paramBindings, workspaces: workspaceBindings}
-			rs, err := resolveSteps(step.Name, usedTaskSpec, bindings)
+			rs, err := resolveSteps(step.Name, usedTaskSpec,
+				replaceParams(paramBindings),
+				replaceWorkspaces(workspaceBindings),
+			)
 			if err != nil {
 				return taskSpec, err
 			}
@@ -129,45 +131,50 @@ func mergeWorkspaces(tgWorkspaces, utWorkspaces []v1beta1.WorkspaceDeclaration) 
 	return workspaces, nil
 }
 
-func resolveSteps(name string, taskSpec v1beta1.TaskSpec, bindings bindings) ([]v1beta1.Step, error) {
+func resolveSteps(name string, taskSpec v1beta1.TaskSpec, transformers ...stepTransformer) ([]v1beta1.Step, error) {
 	steps := make([]v1beta1.Step, len(taskSpec.Steps))
 	var err error
 	for i, s := range taskSpec.Steps {
-		s, err = replaceParams(&s, bindings.params)
-		if err != nil {
-			return steps, nil
+		ps := &s
+		for _, t := range transformers {
+			ps, err = t(ps)
+			if err != nil {
+				return steps, err
+			}
 		}
-		s, err = replaceWorkspaces(&s, bindings.workspaces)
-		if err != nil {
-			return steps, nil
-		}
-		steps[i] = s
+		steps[i] = *ps
 		steps[i].Name = name + "-" + s.Name
 	}
 	return steps, nil
 }
 
-func replaceParams(s *v1beta1.Step, bindings map[string]string) (v1beta1.Step, error) {
-	r := map[string]string{}
-	for old, new := range bindings {
-		// replace old with new
-		r[fmt.Sprintf("params.%s", old)] = fmt.Sprintf("$(params.%s)", new)
-		r[fmt.Sprintf("params['%s']", old)] = fmt.Sprintf("$(params['%s'])", new)
-		r[fmt.Sprintf("params[\"%s\"]", old)] = fmt.Sprintf("$(params[\"%s\"])", new)
+type stepTransformer func(*v1beta1.Step) (*v1beta1.Step, error)
+
+func replaceParams(bindings map[string]string) func(*v1beta1.Step) (*v1beta1.Step, error) {
+	return func(s *v1beta1.Step) (*v1beta1.Step, error) {
+		r := map[string]string{}
+		for old, new := range bindings {
+			// replace old with new
+			r[fmt.Sprintf("params.%s", old)] = fmt.Sprintf("$(params.%s)", new)
+			r[fmt.Sprintf("params['%s']", old)] = fmt.Sprintf("$(params['%s'])", new)
+			r[fmt.Sprintf("params[\"%s\"]", old)] = fmt.Sprintf("$(params[\"%s\"])", new)
+		}
+		v1beta1.ApplyStepReplacements(s, r, map[string][]string{})
+		return s, nil
 	}
-	v1beta1.ApplyStepReplacements(s, r, map[string][]string{})
-	return *s, nil
 }
 
-func replaceWorkspaces(s *v1beta1.Step, bindings map[string]string) (v1beta1.Step, error) {
-	r := map[string]string{}
-	for old, new := range bindings {
-		// replace old with new
-		r[fmt.Sprintf("workspaces.%s.path", old)] = fmt.Sprintf("$(workspaces.%s.path)", new)
-		r[fmt.Sprintf("workspaces.%s.bound", old)] = fmt.Sprintf("$(workspaces.%s.bound)", new)
-		r[fmt.Sprintf("workspaces.%s.claim", old)] = fmt.Sprintf("$(workspaces.%s.claim)", new)
-		r[fmt.Sprintf("workspaces.%s.volume", old)] = fmt.Sprintf("$(workspaces.%s.volume)", new)
+func replaceWorkspaces(bindings map[string]string) func(*v1beta1.Step) (*v1beta1.Step, error) {
+	return func(s *v1beta1.Step) (*v1beta1.Step, error) {
+		r := map[string]string{}
+		for old, new := range bindings {
+			// replace old with new
+			r[fmt.Sprintf("workspaces.%s.path", old)] = fmt.Sprintf("$(workspaces.%s.path)", new)
+			r[fmt.Sprintf("workspaces.%s.bound", old)] = fmt.Sprintf("$(workspaces.%s.bound)", new)
+			r[fmt.Sprintf("workspaces.%s.claim", old)] = fmt.Sprintf("$(workspaces.%s.claim)", new)
+			r[fmt.Sprintf("workspaces.%s.volume", old)] = fmt.Sprintf("$(workspaces.%s.volume)", new)
+		}
+		v1beta1.ApplyStepReplacements(s, r, map[string][]string{})
+		return s, nil
 	}
-	v1beta1.ApplyStepReplacements(s, r, map[string][]string{})
-	return *s, nil
 }
