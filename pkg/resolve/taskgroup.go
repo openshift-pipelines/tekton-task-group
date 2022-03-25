@@ -25,12 +25,14 @@ func TaskSpec(spec *v1alpha1.TaskGroupSpec, usedTaskSpecs map[int]v1beta1.TaskSp
 	}
 	usedTaskSpecsParams := []v1beta1.ParamSpec{}
 	usedTaskSpecsWorkspaces := []v1beta1.WorkspaceDeclaration{}
+	usedTaskSpecResults := []v1beta1.TaskResult{}
 	for i, step := range spec.Steps {
 		if step.Uses != nil {
 			usedTaskSpec, ok := usedTaskSpecs[i]
 			if !ok {
 				return taskSpec, fmt.Errorf("step %s uses not found", step.Name)
 			}
+			// Params
 			paramBindings := map[string]string{}
 			if len(step.Uses.ParamBindings) > 0 {
 				for _, b := range step.Uses.ParamBindings {
@@ -45,6 +47,7 @@ func TaskSpec(spec *v1alpha1.TaskGroupSpec, usedTaskSpecs map[int]v1beta1.TaskSp
 			} else {
 				usedTaskSpecsParams = append(usedTaskSpecsParams, usedTaskSpec.Params...)
 			}
+			// Workspaces
 			workspaceBindings := map[string]string{}
 			if len(step.Uses.WorkspaceBindings) > 0 {
 				for _, b := range step.Uses.WorkspaceBindings {
@@ -59,6 +62,9 @@ func TaskSpec(spec *v1alpha1.TaskGroupSpec, usedTaskSpecs map[int]v1beta1.TaskSp
 			} else {
 				usedTaskSpecsWorkspaces = append(usedTaskSpecsWorkspaces, usedTaskSpec.Workspaces...)
 			}
+			// Results
+			usedTaskSpecResults = append(usedTaskSpecResults, usedTaskSpec.Results...)
+			// Step
 			stepName := step.Name
 			if stepName == "" {
 				stepName = fmt.Sprintf("unamed-%d", i)
@@ -75,16 +81,24 @@ func TaskSpec(spec *v1alpha1.TaskGroupSpec, usedTaskSpecs map[int]v1beta1.TaskSp
 			taskSpec.Steps = append(taskSpec.Steps, step.Step)
 		}
 	}
+	// Params
 	params, err := mergeParams(taskSpec.Params, usedTaskSpecsParams)
 	if err != nil {
 		return taskSpec, err
 	}
 	taskSpec.Params = params
+	// Workspaces
 	workspaces, err := mergeWorkspaces(taskSpec.Workspaces, usedTaskSpecsWorkspaces)
 	if err != nil {
 		return taskSpec, err
 	}
 	taskSpec.Workspaces = workspaces
+	// Results
+	results, err := mergeResults(taskSpec.Results, usedTaskSpecResults)
+	if err != nil {
+		return taskSpec, err
+	}
+	taskSpec.Results = results
 
 	return taskSpec, nil
 }
@@ -133,6 +147,23 @@ func mergeWorkspaces(tgWorkspaces, utWorkspaces []v1beta1.WorkspaceDeclaration) 
 	}
 
 	return workspaces, nil
+}
+
+func mergeResults(tgResults, utResults []v1beta1.TaskResult) ([]v1beta1.TaskResult, error) {
+	results := []v1beta1.TaskResult{}
+	seenResultNames := map[string]v1beta1.TaskResult{}
+	for _, r := range tgResults {
+		seenResultNames[r.Name] = r
+		results = append(results, r)
+	}
+	for _, r := range utResults {
+		if _, ok := seenResultNames[r.Name]; ok {
+			continue
+		}
+		results = append(results, r)
+	}
+
+	return results, nil
 }
 
 func resolveSteps(name string, taskSpec v1beta1.TaskSpec, transformers ...stepTransformer) ([]v1beta1.Step, error) {

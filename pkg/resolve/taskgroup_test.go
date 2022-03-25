@@ -30,6 +30,7 @@ func TestTaskSpec(t *testing.T) {
 		},
 		usedTaskSpec: map[int]v1beta1.TaskSpec{},
 		expected: &v1beta1.TaskSpec{
+			Results:    []v1beta1.TaskResult{},
 			Params:     []v1beta1.ParamSpec{},
 			Workspaces: []v1beta1.WorkspaceDeclaration{},
 			Steps: []v1beta1.Step{{
@@ -63,6 +64,7 @@ func TestTaskSpec(t *testing.T) {
 			},
 		},
 		expected: &v1beta1.TaskSpec{
+			Results:    []v1beta1.TaskResult{},
 			Params:     []v1beta1.ParamSpec{},
 			Workspaces: []v1beta1.WorkspaceDeclaration{},
 			Steps: []v1beta1.Step{{
@@ -109,6 +111,7 @@ func TestTaskSpec(t *testing.T) {
 			},
 		},
 		expected: &v1beta1.TaskSpec{
+			Results:    []v1beta1.TaskResult{},
 			Workspaces: []v1beta1.WorkspaceDeclaration{},
 			Params: []v1beta1.ParamSpec{{
 				Name: "paramTaskGroup",
@@ -164,6 +167,7 @@ func TestTaskSpec(t *testing.T) {
 			},
 		},
 		expected: &v1beta1.TaskSpec{
+			Results:    []v1beta1.TaskResult{},
 			Workspaces: []v1beta1.WorkspaceDeclaration{},
 			Params: []v1beta1.ParamSpec{{
 				Name: "paramTaskGroup",
@@ -218,6 +222,7 @@ func TestTaskSpec(t *testing.T) {
 			},
 		},
 		expected: &v1beta1.TaskSpec{
+			Results:    []v1beta1.TaskResult{},
 			Workspaces: []v1beta1.WorkspaceDeclaration{},
 			Params: []v1beta1.ParamSpec{{
 				Name: "paramFoo",
@@ -267,7 +272,8 @@ func TestTaskSpec(t *testing.T) {
 			},
 		},
 		expected: &v1beta1.TaskSpec{
-			Params: []v1beta1.ParamSpec{},
+			Results: []v1beta1.TaskResult{},
+			Params:  []v1beta1.ParamSpec{},
 			Workspaces: []v1beta1.WorkspaceDeclaration{{
 				Name: "ws1",
 			}},
@@ -277,6 +283,55 @@ func TestTaskSpec(t *testing.T) {
 			}, {
 				Container: corev1.Container{Name: "foo-baz", Image: "bash:latest"},
 				Script:    "echo $(workspaces.ws1.path) $(workspaces.ws1.bound) $(workspaces.ws1.claim) $(workspaces.ws1.volume)",
+			}},
+		},
+	}, {
+		name: "uses steps and results",
+		taskGroupSpec: &v1alpha1.TaskGroupSpec{
+			Results: []v1beta1.TaskResult{{
+				Name: "foo",
+			}},
+			Steps: []v1alpha1.Step{{
+				Step: v1beta1.Step{
+					Container: corev1.Container{Image: "bash:latest"},
+					Script:    "echo foo",
+				},
+			}, {
+				Step: v1beta1.Step{
+					Container: corev1.Container{Name: "foo"},
+				},
+				Uses: &v1alpha1.Uses{
+					TaskRef: v1beta1.TaskRef{Name: "foo"},
+				},
+			}},
+		},
+		usedTaskSpec: map[int]v1beta1.TaskSpec{
+			1: v1beta1.TaskSpec{
+				Results: []v1beta1.TaskResult{{
+					Name: "foo",
+				}, {
+					Name: "bar",
+				}},
+				Steps: []v1beta1.Step{{
+					Container: corev1.Container{Name: "baz", Image: "bash:latest"},
+					Script:    "echo bar",
+				}},
+			},
+		},
+		expected: &v1beta1.TaskSpec{
+			Results: []v1beta1.TaskResult{{
+				Name: "foo",
+			}, {
+				Name: "bar",
+			}},
+			Workspaces: []v1beta1.WorkspaceDeclaration{},
+			Params:     []v1beta1.ParamSpec{},
+			Steps: []v1beta1.Step{{
+				Container: corev1.Container{Image: "bash:latest"},
+				Script:    "echo foo",
+			}, {
+				Container: corev1.Container{Name: "foo-baz", Image: "bash:latest"},
+				Script:    "echo bar",
 			}},
 		},
 	}}
