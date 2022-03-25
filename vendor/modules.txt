@@ -203,6 +203,7 @@ github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
 github.com/golang/protobuf/ptypes/wrappers
 # github.com/google/go-cmp v0.5.7
+## explicit
 github.com/google/go-cmp/cmp
 github.com/google/go-cmp/cmp/cmpopts
 github.com/google/go-cmp/cmp/internal/diff
@@ -292,6 +293,7 @@ github.com/opencontainers/go-digest
 github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
 # github.com/pkg/errors v0.9.1
+## explicit
 github.com/pkg/errors
 # github.com/prometheus/client_golang v1.11.0
 github.com/prometheus/client_golang/prometheus
@@ -360,6 +362,7 @@ github.com/tektoncd/pipeline/pkg/remote
 github.com/tektoncd/pipeline/pkg/remote/oci
 github.com/tektoncd/pipeline/pkg/substitution
 github.com/tektoncd/pipeline/pkg/termination
+github.com/tektoncd/pipeline/test/diff
 # github.com/tektoncd/plumbing v0.0.0-20211012143332-c7cc43d9bc0c
 ## explicit
 github.com/tektoncd/plumbing

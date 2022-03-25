@@ -10,7 +10,9 @@ replace (
 )
 
 require (
+	github.com/google/go-cmp v0.5.7
 	github.com/hashicorp/go-multierror v1.1.1
+	github.com/pkg/errors v0.9.1
 	github.com/tektoncd/pipeline v0.34.1
 	github.com/tektoncd/plumbing v0.0.0-20211012143332-c7cc43d9bc0c
 	go.uber.org/zap v1.19.1
