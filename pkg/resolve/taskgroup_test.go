@@ -348,6 +348,50 @@ func TestTaskSpec(t *testing.T) {
 				Script:    "echo bar",
 			}},
 		},
+	}, {
+		name: "uses steps and stepTemplate",
+		taskGroupSpec: &v1alpha1.TaskGroupSpec{
+			StepTemplate: &corev1.Container{
+				Image: "bash:latest",
+			},
+			Steps: []v1alpha1.Step{{
+				Step: v1beta1.Step{
+					Script: "echo foo",
+				},
+			}, {
+				Step: v1beta1.Step{
+					Container: corev1.Container{Name: "foo"},
+				},
+				Uses: &v1alpha1.Uses{
+					TaskRef: v1beta1.TaskRef{Name: "foo"},
+				},
+			}},
+		},
+		usedTaskSpec: map[int]v1beta1.TaskSpec{
+			1: v1beta1.TaskSpec{
+				StepTemplate: &corev1.Container{
+					Image: "fedora:latest",
+				},
+				Steps: []v1beta1.Step{{
+					Container: corev1.Container{Name: "bar"},
+					Script:    "echo bar",
+				}},
+			},
+		},
+		expected: &v1beta1.TaskSpec{
+			Sidecars:   []v1beta1.Sidecar{},
+			Volumes:    []corev1.Volume{},
+			Results:    []v1beta1.TaskResult{},
+			Workspaces: []v1beta1.WorkspaceDeclaration{},
+			Params:     []v1beta1.ParamSpec{},
+			Steps: []v1beta1.Step{{
+				Container: corev1.Container{Image: "bash:latest"},
+				Script:    "echo foo",
+			}, {
+				Container: corev1.Container{Name: "foo-bar", Image: "fedora:latest"},
+				Script:    "echo bar",
+			}},
+		},
 	}}
 	for _, tc := range cases {
 		tc := tc

@@ -18,16 +18,15 @@ type bindings struct {
 }
 
 func TaskSpec(spec *v1alpha1.TaskGroupSpec, usedTaskSpecs map[int]v1beta1.TaskSpec) (*v1beta1.TaskSpec, error) {
-	// TODO: Merge results, volumes, sidecars, steptemplate
 	taskSpec := &v1beta1.TaskSpec{
-		Description:  spec.Description,
-		Params:       spec.Params,
-		Steps:        []v1beta1.Step{},
-		Workspaces:   spec.Workspaces,
-		Results:      spec.Results,
-		Sidecars:     spec.Sidecars,
-		StepTemplate: spec.StepTemplate,
-		Volumes:      spec.Volumes,
+		Description: spec.Description,
+		Params:      spec.Params,
+		Steps:       []v1beta1.Step{},
+		Workspaces:  spec.Workspaces,
+		Results:     spec.Results,
+		Sidecars:    spec.Sidecars,
+		// StepTemplate: spec.StepTemplate,
+		Volumes: spec.Volumes,
 	}
 	usedTaskSpecsParams := []v1beta1.ParamSpec{}
 	usedTaskSpecsWorkspaces := []v1beta1.WorkspaceDeclaration{}
@@ -35,6 +34,8 @@ func TaskSpec(spec *v1alpha1.TaskGroupSpec, usedTaskSpecs map[int]v1beta1.TaskSp
 	usedTaskSpecSidecars := []v1beta1.Sidecar{}
 	usedTaskSpecVolumes := []corev1.Volume{}
 	for i, step := range spec.Steps {
+		stepTemplate := spec.StepTemplate
+		var steps []v1beta1.Step
 		if step.Uses != nil {
 			usedTaskSpec, ok := usedTaskSpecs[i]
 			if !ok {
@@ -88,10 +89,17 @@ func TaskSpec(spec *v1alpha1.TaskGroupSpec, usedTaskSpecs map[int]v1beta1.TaskSp
 			if err != nil {
 				return taskSpec, err
 			}
-			taskSpec.Steps = append(taskSpec.Steps, rs...)
+			steps = rs
+			stepTemplate = usedTaskSpec.StepTemplate
 		} else {
-			taskSpec.Steps = append(taskSpec.Steps, step.Step)
+			steps = []v1beta1.Step{step.Step}
 		}
+		// Merge stepTemplate with those steps
+		steps, err := v1beta1.MergeStepsWithStepTemplate(stepTemplate, steps)
+		if err != nil {
+			return taskSpec, err
+		}
+		taskSpec.Steps = append(taskSpec.Steps, steps...)
 	}
 	for _, t := range []taskSpecTransformer{
 		mergeParams(usedTaskSpecsParams),
