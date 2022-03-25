@@ -10,9 +10,13 @@ import (
 func TaskSpec(spec *v1alpha1.TaskGroupSpec, usedTaskSpecs map[int]v1beta1.TaskSpec) (*v1beta1.TaskSpec, error) {
 	// TODO: Merge params, workspaces, results, volumes, sidecars, steptemplate
 	taskSpec := &v1beta1.TaskSpec{
-		Description: spec.Description,
-		Params:      spec.Params,
-		Steps:       []v1beta1.Step{},
+		Description:  spec.Description,
+		Params:       spec.Params,
+		Steps:        []v1beta1.Step{},
+		Workspaces:   spec.Workspaces,
+		Results:      spec.Results,
+		Sidecars:     spec.Sidecars,
+		StepTemplate: spec.StepTemplate,
 	}
 	usedTaskSpecsParams := []v1beta1.ParamSpec{}
 	for i, step := range spec.Steps {
