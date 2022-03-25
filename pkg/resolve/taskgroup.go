@@ -7,6 +7,10 @@ import (
 	"github.com/vdemeester/tekton-task-group/pkg/apis/taskgroup/v1alpha1"
 )
 
+type stepTransformer func(*v1beta1.Step) (*v1beta1.Step, error)
+
+type taskSpecTransformer func(*v1beta1.TaskSpec) (*v1beta1.TaskSpec, error)
+
 type bindings struct {
 	params     map[string]string
 	workspaces map[string]string
@@ -81,89 +85,88 @@ func TaskSpec(spec *v1alpha1.TaskGroupSpec, usedTaskSpecs map[int]v1beta1.TaskSp
 			taskSpec.Steps = append(taskSpec.Steps, step.Step)
 		}
 	}
-	// Params
-	params, err := mergeParams(taskSpec.Params, usedTaskSpecsParams)
-	if err != nil {
-		return taskSpec, err
+	for _, t := range []taskSpecTransformer{
+		mergeParams(usedTaskSpecsParams),
+		mergeWorkspaces(usedTaskSpecsWorkspaces),
+		mergeResults(usedTaskSpecResults),
+	} {
+		taskSpec, err := t(taskSpec)
+		if err != nil {
+			return taskSpec, err
+		}
 	}
-	taskSpec.Params = params
-	// Workspaces
-	workspaces, err := mergeWorkspaces(taskSpec.Workspaces, usedTaskSpecsWorkspaces)
-	if err != nil {
-		return taskSpec, err
-	}
-	taskSpec.Workspaces = workspaces
-	// Results
-	results, err := mergeResults(taskSpec.Results, usedTaskSpecResults)
-	if err != nil {
-		return taskSpec, err
-	}
-	taskSpec.Results = results
 
 	return taskSpec, nil
 }
 
-func mergeParams(tgParams, utParams []v1beta1.ParamSpec) ([]v1beta1.ParamSpec, error) {
-	params := []v1beta1.ParamSpec{}
-	seenParamNames := map[string]v1beta1.ParamSpec{}
-	for _, p := range tgParams {
-		seenParamNames[p.Name] = p
-		params = append(params, p)
-	}
-	for _, p := range utParams {
-		if sp, ok := seenParamNames[p.Name]; ok {
-			if sp.Type != p.Type {
-				return params, fmt.Errorf("Duplicate param %s with different types", p.Name)
-			}
-			continue
+func mergeParams(utParams []v1beta1.ParamSpec) taskSpecTransformer {
+	return func(spec *v1beta1.TaskSpec) (*v1beta1.TaskSpec, error) {
+		params := []v1beta1.ParamSpec{}
+		seenParamNames := map[string]v1beta1.ParamSpec{}
+		for _, p := range spec.Params {
+			seenParamNames[p.Name] = p
+			params = append(params, p)
 		}
-		params = append(params, p)
+		for _, p := range utParams {
+			if sp, ok := seenParamNames[p.Name]; ok {
+				if sp.Type != p.Type {
+					return spec, fmt.Errorf("Duplicate param %s with different types", p.Name)
+				}
+				continue
+			}
+			params = append(params, p)
+		}
+		spec.Params = params
+		return spec, nil
 	}
-
-	return params, nil
 }
 
-func mergeWorkspaces(tgWorkspaces, utWorkspaces []v1beta1.WorkspaceDeclaration) ([]v1beta1.WorkspaceDeclaration, error) {
-	workspaces := []v1beta1.WorkspaceDeclaration{}
-	seenWorkspaceNames := map[string]v1beta1.WorkspaceDeclaration{}
-	for _, w := range tgWorkspaces {
-		seenWorkspaceNames[w.Name] = w
-		workspaces = append(workspaces, w)
-	}
-	for _, w := range utWorkspaces {
-		if sw, ok := seenWorkspaceNames[w.Name]; ok {
-			if sw.MountPath != w.MountPath {
-				return workspaces, fmt.Errorf("Duplicate workspace %s with different mountPath", w.Name)
-			}
-			if sw.ReadOnly != w.ReadOnly {
-				return workspaces, fmt.Errorf("Duplicate workspace %s with different readOnly option", w.Name)
-			}
-			if sw.Optional != w.Optional {
-				return workspaces, fmt.Errorf("Duplicate workspace %s with different optional option", w.Name)
-			}
-			continue
+func mergeWorkspaces(utWorkspaces []v1beta1.WorkspaceDeclaration) taskSpecTransformer {
+	return func(spec *v1beta1.TaskSpec) (*v1beta1.TaskSpec, error) {
+		workspaces := []v1beta1.WorkspaceDeclaration{}
+		seenWorkspaceNames := map[string]v1beta1.WorkspaceDeclaration{}
+		for _, w := range spec.Workspaces {
+			seenWorkspaceNames[w.Name] = w
+			workspaces = append(workspaces, w)
 		}
-		workspaces = append(workspaces, w)
+		for _, w := range utWorkspaces {
+			if sw, ok := seenWorkspaceNames[w.Name]; ok {
+				if sw.MountPath != w.MountPath {
+					return spec, fmt.Errorf("Duplicate workspace %s with different mountPath", w.Name)
+				}
+				if sw.ReadOnly != w.ReadOnly {
+					return spec, fmt.Errorf("Duplicate workspace %s with different readOnly option", w.Name)
+				}
+				if sw.Optional != w.Optional {
+					return spec, fmt.Errorf("Duplicate workspace %s with different optional option", w.Name)
+				}
+				continue
+			}
+			workspaces = append(workspaces, w)
+		}
+		spec.Workspaces = workspaces
+		return spec, nil
 	}
-
-	return workspaces, nil
 }
 
-func mergeResults(tgResults, utResults []v1beta1.TaskResult) ([]v1beta1.TaskResult, error) {
-	results := []v1beta1.TaskResult{}
-	seenResultNames := map[string]v1beta1.TaskResult{}
-	for _, r := range tgResults {
-		seenResultNames[r.Name] = r
-		results = append(results, r)
-	}
-	for _, r := range utResults {
-		if _, ok := seenResultNames[r.Name]; ok {
-			continue
+func mergeResults(utResults []v1beta1.TaskResult) taskSpecTransformer {
+	return func(spec *v1beta1.TaskSpec) (*v1beta1.TaskSpec, error) {
+		results := []v1beta1.TaskResult{}
+		seenResultNames := map[string]v1beta1.TaskResult{}
+		for _, r := range spec.Results {
+			seenResultNames[r.Name] = r
+			results = append(results, r)
 		}
-		results = append(results, r)
-	}
+		for _, r := range utResults {
+			if _, ok := seenResultNames[r.Name]; ok {
+				continue
+			}
+			results = append(results, r)
+		}
+		spec.Results = results
 
-	return results, nil
+		return spec, nil
+	}
 }
 
 func resolveSteps(name string, taskSpec v1beta1.TaskSpec, transformers ...stepTransformer) ([]v1beta1.Step, error) {
@@ -183,9 +186,7 @@ func resolveSteps(name string, taskSpec v1beta1.TaskSpec, transformers ...stepTr
 	return steps, nil
 }
 
-type stepTransformer func(*v1beta1.Step) (*v1beta1.Step, error)
-
-func replaceParams(bindings map[string]string) func(*v1beta1.Step) (*v1beta1.Step, error) {
+func replaceParams(bindings map[string]string) stepTransformer {
 	return func(s *v1beta1.Step) (*v1beta1.Step, error) {
 		r := map[string]string{}
 		for old, new := range bindings {
@@ -199,7 +200,7 @@ func replaceParams(bindings map[string]string) func(*v1beta1.Step) (*v1beta1.Ste
 	}
 }
 
-func replaceWorkspaces(bindings map[string]string) func(*v1beta1.Step) (*v1beta1.Step, error) {
+func replaceWorkspaces(bindings map[string]string) stepTransformer {
 	return func(s *v1beta1.Step) (*v1beta1.Step, error) {
 		r := map[string]string{}
 		for old, new := range bindings {
