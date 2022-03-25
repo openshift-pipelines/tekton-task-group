@@ -3,16 +3,23 @@ kind: TaskGroup
 metadata:
   name: foo
 spec:
+  params:
+  - name: git-url
+    type: string
+    default: https://github.com/vdemeester/buildkit-tekton
   steps:
   - name: clone
     uses:
       taskRef:
         name: my-git-clone
+      parambindings:
+      - name: url
+        param: git-url
   - name: build
     image: docker.io/library/golang:latest
     script: |
       ls -l /workspace; ls -l /workspace/foo; true
-      cd /workspace/foo && go build -v ./cmd/tkn-local
+      cd /workspace/foo && go build -v ./...
 ---
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
@@ -26,3 +33,6 @@ spec:
           apiVersion: custom.tekton.dev/v1alpha1
           kind: TaskGroup
           name: foo
+        params:
+        - name: git-url
+          value: https://github.com/vdemeester/go-helloworld-app

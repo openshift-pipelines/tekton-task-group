@@ -27,14 +27,13 @@ import (
 	"github.com/vdemeester/tekton-task-group/pkg/resolve"
 	"go.uber.org/zap"
 	"gomodules.xyz/jsonpatch/v2"
-	"k8s.io/client-go/kubernetes"
-	"knative.dev/pkg/controller"
-	"knative.dev/pkg/kmeta"
-	// corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
 	"knative.dev/pkg/apis"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 )
@@ -267,8 +266,7 @@ func (c *Reconciler) createTaskRun(ctx context.Context, logger *zap.SugaredLogge
 			Annotations:     getTaskRunAnnotations(run),
 		},
 		Spec: v1beta1.TaskRunSpec{
-			// Params:             getParameters(run, tls, iteration),
-			// Timeout:            tls.Timeout,
+			Params:             run.Spec.Params,
 			ServiceAccountName: run.Spec.ServiceAccountName,
 			PodTemplate:        run.Spec.PodTemplate,
 			Workspaces:         run.Spec.Workspaces,

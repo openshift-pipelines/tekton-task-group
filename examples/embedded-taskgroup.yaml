@@ -16,4 +16,4 @@ spec:
         image: docker.io/library/golang:latest
         script: |
           ls -l /workspace; ls -l /workspace/foo; true
-          cd /workspace/foo && go build -v ./cmd/tkn-local
+          cd /workspace/foo && go build -v ./...

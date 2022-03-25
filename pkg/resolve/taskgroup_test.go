@@ -71,6 +71,161 @@ func TestTaskSpec(t *testing.T) {
 				Script:    "echo bar",
 			}},
 		},
+	}, {
+		name: "uses steps and params",
+		taskGroupSpec: &v1alpha1.TaskGroupSpec{
+			Params: []v1beta1.ParamSpec{{
+				Name: "paramTaskGroup",
+				Type: v1beta1.ParamTypeString,
+			}},
+			Steps: []v1alpha1.Step{{
+				Step: v1beta1.Step{
+					Container: corev1.Container{Image: "bash:latest"},
+					Script:    "echo foo",
+				},
+			}, {
+				Step: v1beta1.Step{
+					Container: corev1.Container{Name: "foo"},
+				},
+				Uses: &v1alpha1.Uses{
+					TaskRef: v1beta1.TaskRef{Name: "foo"},
+				},
+			}},
+		},
+		usedTaskSpec: map[int]v1beta1.TaskSpec{
+			1: v1beta1.TaskSpec{
+				Params: []v1beta1.ParamSpec{{
+					Name:        "param1",
+					Type:        v1beta1.ParamTypeString,
+					Default:     v1beta1.NewArrayOrString("value1"),
+					Description: "description1",
+				}},
+				Steps: []v1beta1.Step{{
+					Container: corev1.Container{Name: "baz", Image: "bash:latest"},
+					Script:    "echo bar",
+				}},
+			},
+		},
+		expected: &v1beta1.TaskSpec{
+			Params: []v1beta1.ParamSpec{{
+				Name: "paramTaskGroup",
+				Type: v1beta1.ParamTypeString,
+			}, {
+				Name:        "param1",
+				Type:        v1beta1.ParamTypeString,
+				Default:     v1beta1.NewArrayOrString("value1"),
+				Description: "description1",
+			}},
+			Steps: []v1beta1.Step{{
+				Container: corev1.Container{Image: "bash:latest"},
+				Script:    "echo foo",
+			}, {
+				Container: corev1.Container{Name: "foo-baz", Image: "bash:latest"},
+				Script:    "echo bar",
+			}},
+		},
+	}, {
+		name: "uses steps and duplicated params",
+		taskGroupSpec: &v1alpha1.TaskGroupSpec{
+			Params: []v1beta1.ParamSpec{{
+				Name: "paramTaskGroup",
+				Type: v1beta1.ParamTypeString,
+			}, {
+				Name: "paramFoo",
+				Type: v1beta1.ParamTypeString,
+			}},
+			Steps: []v1alpha1.Step{{
+				Step: v1beta1.Step{
+					Container: corev1.Container{Image: "bash:latest"},
+					Script:    "echo foo",
+				},
+			}, {
+				Step: v1beta1.Step{
+					Container: corev1.Container{Name: "foo"},
+				},
+				Uses: &v1alpha1.Uses{
+					TaskRef: v1beta1.TaskRef{Name: "foo"},
+				},
+			}},
+		},
+		usedTaskSpec: map[int]v1beta1.TaskSpec{
+			1: v1beta1.TaskSpec{
+				Params: []v1beta1.ParamSpec{{
+					Name: "paramFoo",
+					Type: v1beta1.ParamTypeString,
+				}},
+				Steps: []v1beta1.Step{{
+					Container: corev1.Container{Name: "baz", Image: "bash:latest"},
+					Script:    "echo bar",
+				}},
+			},
+		},
+		expected: &v1beta1.TaskSpec{
+			Params: []v1beta1.ParamSpec{{
+				Name: "paramTaskGroup",
+				Type: v1beta1.ParamTypeString,
+			}, {
+				Name: "paramFoo",
+				Type: v1beta1.ParamTypeString,
+			}},
+			Steps: []v1beta1.Step{{
+				Container: corev1.Container{Image: "bash:latest"},
+				Script:    "echo foo",
+			}, {
+				Container: corev1.Container{Name: "foo-baz", Image: "bash:latest"},
+				Script:    "echo bar",
+			}},
+		},
+	}, {
+		name: "uses steps and param bindings",
+		taskGroupSpec: &v1alpha1.TaskGroupSpec{
+			Params: []v1beta1.ParamSpec{{
+				Name: "paramFoo",
+				Type: v1beta1.ParamTypeString,
+			}},
+			Steps: []v1alpha1.Step{{
+				Step: v1beta1.Step{
+					Container: corev1.Container{Image: "bash:latest"},
+					Script:    "echo foo",
+				},
+			}, {
+				Step: v1beta1.Step{
+					Container: corev1.Container{Name: "foo"},
+				},
+				Uses: &v1alpha1.Uses{
+					TaskRef: v1beta1.TaskRef{Name: "foo"},
+					ParamBindings: []v1alpha1.ParamBinding{{
+						Name:  "paramBar",
+						Param: "paramFoo",
+					}},
+				},
+			}},
+		},
+		usedTaskSpec: map[int]v1beta1.TaskSpec{
+			1: v1beta1.TaskSpec{
+				Params: []v1beta1.ParamSpec{{
+					Name: "paramBar",
+					Type: v1beta1.ParamTypeString,
+				}},
+				Steps: []v1beta1.Step{{
+					Container: corev1.Container{Name: "baz", Image: "bash:latest"},
+					Script:    "echo $(params.paramBar)",
+				}},
+			},
+		},
+		expected: &v1beta1.TaskSpec{
+			Params: []v1beta1.ParamSpec{{
+				Name: "paramFoo",
+				Type: v1beta1.ParamTypeString,
+			}},
+			Steps: []v1beta1.Step{{
+				Container: corev1.Container{Image: "bash:latest"},
+				Script:    "echo foo",
+			}, {
+				Container: corev1.Container{Name: "foo-baz", Image: "bash:latest"},
+				Script:    "echo $(params.paramFoo)",
+			}},
+		},
 	}}
 	for _, tc := range cases {
 		tc := tc
@@ -92,7 +247,7 @@ func TestTaskSpec_Invalid(t *testing.T) {
 		taskGroupSpec *v1alpha1.TaskGroupSpec
 		usedTaskSpec  map[int]v1beta1.TaskSpec
 	}{{
-		name: "no uses",
+		name: "uses but no use picked up (not a valid case in prod)",
 		taskGroupSpec: &v1alpha1.TaskGroupSpec{
 			Steps: []v1alpha1.Step{{
 				Uses: &v1alpha1.Uses{
@@ -101,6 +256,34 @@ func TestTaskSpec_Invalid(t *testing.T) {
 			}},
 		},
 		usedTaskSpec: map[int]v1beta1.TaskSpec{},
+	}, {
+		name: "duplicated params with different types",
+		taskGroupSpec: &v1alpha1.TaskGroupSpec{
+			Params: []v1beta1.ParamSpec{{
+				Name: "paramFoo",
+				Type: v1beta1.ParamTypeString,
+			}},
+			Steps: []v1alpha1.Step{{
+				Step: v1beta1.Step{
+					Container: corev1.Container{Name: "foo"},
+				},
+				Uses: &v1alpha1.Uses{
+					TaskRef: v1beta1.TaskRef{Name: "foo"},
+				},
+			}},
+		},
+		usedTaskSpec: map[int]v1beta1.TaskSpec{
+			1: v1beta1.TaskSpec{
+				Params: []v1beta1.ParamSpec{{
+					Name: "paramFoo",
+					Type: v1beta1.ParamTypeArray,
+				}},
+				Steps: []v1beta1.Step{{
+					Container: corev1.Container{Name: "baz", Image: "bash:latest"},
+					Script:    "echo bar",
+				}},
+			},
+		},
 	}}
 	for _, tc := range cases {
 		tc := tc

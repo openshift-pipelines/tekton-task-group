@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	v1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -40,7 +41,39 @@ type TaskGroup struct {
 // TaskGroupSpec defines the desired state of the TaskGroup
 type TaskGroupSpec struct {
 	// FIXME(vdemeester): define a spec
-	Steps []Step `json:"steps"`
+
+	// Params is a list of input parameters required to run the task. Params
+	// must be supplied as inputs in TaskRuns unless they declare a default
+	// value.
+	// +optional
+	Params []v1beta1.ParamSpec `json:"params,omitempty"`
+
+	// Description is a user-facing description of the task that may be
+	// used to populate a UI.
+	// +optional
+	Description string `json:"description,omitempty"`
+
+	// Steps are the steps of the build; each step is run sequentially with the
+	// source mounted into /workspace.
+	Steps []Step `json:"steps,omitempty"`
+
+	// Volumes is a collection of volumes that are available to mount into the
+	// steps of the build.
+	Volumes []corev1.Volume `json:"volumes,omitempty"`
+
+	// StepTemplate can be used as the basis for all step containers within the
+	// Task, so that the steps inherit settings on the base container.
+	StepTemplate *corev1.Container `json:"stepTemplate,omitempty"`
+
+	// Sidecars are run alongside the Task's step containers. They begin before
+	// the steps start and end after the steps complete.
+	Sidecars []v1beta1.Sidecar `json:"sidecars,omitempty"`
+
+	// Workspaces are the volumes that this Task requires.
+	Workspaces []v1beta1.WorkspaceDeclaration `json:"workspaces,omitempty"`
+
+	// Results are values that this Task can output
+	Results []v1beta1.TaskResult `json:"results,omitempty"`
 }
 
 type Step struct {
@@ -52,6 +85,13 @@ type Step struct {
 
 type Uses struct {
 	TaskRef v1beta1.TaskRef `json:"taskRef"`
+
+	ParamBindings []ParamBinding `json:"parambindings"`
+}
+
+type ParamBinding struct {
+	Name  string `json:"name"`
+	Param string `json:"param"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
