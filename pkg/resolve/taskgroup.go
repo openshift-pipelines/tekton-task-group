@@ -13,7 +13,7 @@ type bindings struct {
 }
 
 func TaskSpec(spec *v1alpha1.TaskGroupSpec, usedTaskSpecs map[int]v1beta1.TaskSpec) (*v1beta1.TaskSpec, error) {
-	// TODO: Merge workspaces, results, volumes, sidecars, steptemplate
+	// TODO: Merge results, volumes, sidecars, steptemplate
 	taskSpec := &v1beta1.TaskSpec{
 		Description:  spec.Description,
 		Params:       spec.Params,
@@ -59,7 +59,11 @@ func TaskSpec(spec *v1alpha1.TaskGroupSpec, usedTaskSpecs map[int]v1beta1.TaskSp
 			} else {
 				usedTaskSpecsWorkspaces = append(usedTaskSpecsWorkspaces, usedTaskSpec.Workspaces...)
 			}
-			rs, err := resolveSteps(step.Name, usedTaskSpec,
+			stepName := step.Name
+			if stepName == "" {
+				stepName = fmt.Sprintf("unamed-%d", i)
+			}
+			rs, err := resolveSteps(stepName, usedTaskSpec,
 				replaceParams(paramBindings),
 				replaceWorkspaces(workspaceBindings),
 			)
