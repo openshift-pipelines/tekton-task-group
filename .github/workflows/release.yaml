@@ -1,0 +1,24 @@
+name: Publish Release YAML
+
+on:
+  release:
+    types: ['created']
+
+jobs:
+  publish-release-yaml:
+    name: Publish Release YAML
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+      - uses: actions/checkout@v2
+      - uses: imjasonh/setup-ko@v0.4
+
+      - name: Generate and upload release.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag=$(echo ${{ github.ref }} | cut -c11-)  # get tag name without tags/refs/ prefix.
+          ko resolve -t ${tag} -f config/ > release.yaml
+          gh release upload ${tag} release.yaml
