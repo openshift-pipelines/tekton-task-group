@@ -5,7 +5,7 @@ on:
   schedule:
     - cron: '0 0 * * *'
 
-name: Create Release
+name: Publish latest images
 
 jobs:
   build:
