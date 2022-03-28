@@ -44,9 +44,6 @@ const (
 
 	// taskGroupRunLabelKey is the label identifier for a Run.  This label is added to the Run's TaskRuns.
 	taskGroupRunLabelKey = "/run"
-
-	// taskGroupIterationLabelKey is the label identifier for the iteration number.  This label is added to the Run's TaskRuns.
-	taskGroupIterationLabelKey = "/taskGroupIteration"
 )
 
 // Reconciler implements controller.Reconciler for Configuration resources.
