@@ -250,7 +250,7 @@ spec:
 Support for workspaces would work the same way as it does for `params`, with the same behavior for duplicated workspaces and
 same workspaces with different names. It would look like the following:
 
-```yaml=
+```yaml
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
