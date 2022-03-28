@@ -87,7 +87,7 @@ type Uses struct {
 	TaskRef v1beta1.TaskRef `json:"taskRef"`
 
 	ParamBindings     []ParamBinding     `json:"parambindings"`
-	WorkspaceBindings []WorkspaceBinding `json:"workspacebinding"`
+	WorkspaceBindings []WorkspaceBinding `json:"workspacebindings"`
 }
 
 type ParamBinding struct {
