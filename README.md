@@ -40,7 +40,10 @@ cluster, in the `tekton-pipelines` namespaces.
 
 ## Usage
 
+**NOTE**:- You need to install [tektoncd/pipeline](https://github.com/tektoncd/pipeline/blob/main/docs/install.md) and also make sure to enable it's [alpha api](https://github.com/tektoncd/pipeline/blob/main/config/config-feature-flags.yaml#L72)
+
 To execute a `TaskGroup` there is two ways :
+
 - create a `Run` object that refers to `TaskGroup` — this is
   essentially like doing a `TaskRun`.
 - create a `PipelineRun` object uses a Custom Task that refers to a
@@ -292,6 +295,7 @@ spec:
 ## Limitations
 
 There is a couple limitations in the current implementation (so far):
+
 - Variable interpolation *outside* of the injected step by `uses` is
   not supported. This is only a problem in case you *bind* a parameter
   or a workspace.
