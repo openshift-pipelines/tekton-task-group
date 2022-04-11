@@ -21,8 +21,8 @@ package fake
 import (
 	context "context"
 
-	factoryfiltered "github.com/vdemeester/tekton-task-group/pkg/client/injection/informers/factory/filtered"
-	filtered "github.com/vdemeester/tekton-task-group/pkg/client/injection/informers/taskgroup/v1alpha1/taskgroup/filtered"
+	factoryfiltered "github.com/openshift-pipelines/tekton-task-group/pkg/client/injection/informers/factory/filtered"
+	filtered "github.com/openshift-pipelines/tekton-task-group/pkg/client/injection/informers/taskgroup/v1alpha1/taskgroup/filtered"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 	logging "knative.dev/pkg/logging"

@@ -9,7 +9,7 @@ set -o nounset
 function shim_gopath() {
   local REPO_DIR=$(git rev-parse --show-toplevel)
   local TEMP_GOPATH="${REPO_DIR}/.gopath"
-  local TEMP_VDEMEESTER="${TEMP_GOPATH}/src/github.com/vdemeester"
+  local TEMP_VDEMEESTER="${TEMP_GOPATH}/src/github.com/openshift-pipelines"
   local TEMP_TASKGROUP="${TEMP_VDEMEESTER}/tekton-task-group"
   local NEEDS_MOVE=1
 
@@ -40,7 +40,7 @@ function shim_gopath() {
 
   mkdir -p "$TEMP_VDEMEESTER"
   # This will create a symlink from
-  # (repo-root)/.gopath/src/github.com/vdemeester/tekton-task-group
+  # (repo-root)/.gopath/src/github.com/openshift-pipelines/tekton-task-group
   # to the user's pipeline checkout.
   ln -s "$REPO_DIR" "$TEMP_VDEMEESTER"
   echo "Moving to $TEMP_TASKGROUP"
@@ -76,7 +76,7 @@ function delete_pipeline_repo_symlink() {
   local REPO_DIR=$(git rev-parse --show-toplevel)
   local TEMP_GOPATH="${REPO_DIR}/.gopath"
   if [ -d "$TEMP_GOPATH" ] ; then
-    local REPO_SYMLINK="${TEMP_GOPATH}/src/github.com/vdemeester/tekton-task-group"
+    local REPO_SYMLINK="${TEMP_GOPATH}/src/github.com/openshift-pipelines/tekton-task-group"
     if [ -L $REPO_SYMLINK ] ; then
       echo "Deleting symlink to pipelines repo $REPO_SYMLINK"
       rm -f "${REPO_SYMLINK}"

@@ -6,7 +6,7 @@ spec:
   params:
   - name: url
     type: string
-    default: https://github.com/vdemeester/buildkit-tekton
+    default: https://github.com/openshift-pipelines/buildkit-tekton
   steps:
   - name: clone
     image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.21.0

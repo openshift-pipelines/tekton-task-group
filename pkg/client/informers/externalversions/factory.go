@@ -23,9 +23,9 @@ import (
 	sync "sync"
 	time "time"
 
-	versioned "github.com/vdemeester/tekton-task-group/pkg/client/clientset/versioned"
-	internalinterfaces "github.com/vdemeester/tekton-task-group/pkg/client/informers/externalversions/internalinterfaces"
-	taskgroup "github.com/vdemeester/tekton-task-group/pkg/client/informers/externalversions/taskgroup"
+	versioned "github.com/openshift-pipelines/tekton-task-group/pkg/client/clientset/versioned"
+	internalinterfaces "github.com/openshift-pipelines/tekton-task-group/pkg/client/informers/externalversions/internalinterfaces"
+	taskgroup "github.com/openshift-pipelines/tekton-task-group/pkg/client/informers/externalversions/taskgroup"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

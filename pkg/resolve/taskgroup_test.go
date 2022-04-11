@@ -8,8 +8,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	// "github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	"github.com/vdemeester/tekton-task-group/pkg/apis/taskgroup/v1alpha1"
-	"github.com/vdemeester/tekton-task-group/pkg/resolve"
+	"github.com/openshift-pipelines/tekton-task-group/pkg/apis/taskgroup/v1alpha1"
+	"github.com/openshift-pipelines/tekton-task-group/pkg/resolve"
 )
 
 func TestTaskSpec(t *testing.T) {

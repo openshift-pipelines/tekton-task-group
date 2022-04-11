@@ -29,7 +29,7 @@ published.
 # In a checkout of this repository
 $ export KO_DOCKER_REPO={prefix-for-image-reference} # e.g.: quay.io/vdemeest
 $ ko apply -f config
-2022/03/28 14:53:16 Using base gcr.io/distroless/static:nonroot@sha256:2556293984c5738fc75208cce52cf0a4762c709cf38e4bf8def65a61992da0ad for github.com/vdemeester/tekton-task-group/cmd/controller
+2022/03/28 14:53:16 Using base gcr.io/distroless/static:nonroot@sha256:2556293984c5738fc75208cce52cf0a4762c709cf38e4bf8def65a61992da0ad for github.com/openshift-pipelines/tekton-task-group/cmd/controller
 # […]
 customresourcedefinition.apiextensions.k8s.io/taskgroups.custom.tekton.dev configured
 deployment.apps/tekton-taskgroup-controller configured

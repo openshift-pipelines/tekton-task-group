@@ -6,7 +6,7 @@ spec:
   params:
   - name: git-url
     type: string
-    default: https://github.com/vdemeester/buildkit-tekton
+    default: https://github.com/openshift-pipelines/buildkit-tekton
   steps:
   - name: clone
     uses:
@@ -35,4 +35,4 @@ spec:
           name: foo
         params:
         - name: git-url
-          value: https://github.com/vdemeester/go-helloworld-app
+          value: https://github.com/openshift-pipelines/go-helloworld-app

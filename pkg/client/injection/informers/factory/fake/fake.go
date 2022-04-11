@@ -21,9 +21,9 @@ package fake
 import (
 	context "context"
 
-	externalversions "github.com/vdemeester/tekton-task-group/pkg/client/informers/externalversions"
-	fake "github.com/vdemeester/tekton-task-group/pkg/client/injection/client/fake"
-	factory "github.com/vdemeester/tekton-task-group/pkg/client/injection/informers/factory"
+	externalversions "github.com/openshift-pipelines/tekton-task-group/pkg/client/informers/externalversions"
+	fake "github.com/openshift-pipelines/tekton-task-group/pkg/client/injection/client/fake"
+	factory "github.com/openshift-pipelines/tekton-task-group/pkg/client/injection/informers/factory"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 )

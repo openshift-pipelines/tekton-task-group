@@ -19,7 +19,7 @@ limitations under the License.
 package scheme
 
 import (
-	customv1alpha1 "github.com/vdemeester/tekton-task-group/pkg/apis/taskgroup/v1alpha1"
+	customv1alpha1 "github.com/openshift-pipelines/tekton-task-group/pkg/apis/taskgroup/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

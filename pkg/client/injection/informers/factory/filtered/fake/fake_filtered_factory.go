@@ -21,9 +21,9 @@ package fakeFilteredFactory
 import (
 	context "context"
 
-	externalversions "github.com/vdemeester/tekton-task-group/pkg/client/informers/externalversions"
-	fake "github.com/vdemeester/tekton-task-group/pkg/client/injection/client/fake"
-	filtered "github.com/vdemeester/tekton-task-group/pkg/client/injection/informers/factory/filtered"
+	externalversions "github.com/openshift-pipelines/tekton-task-group/pkg/client/informers/externalversions"
+	fake "github.com/openshift-pipelines/tekton-task-group/pkg/client/injection/client/fake"
+	filtered "github.com/openshift-pipelines/tekton-task-group/pkg/client/injection/informers/factory/filtered"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"

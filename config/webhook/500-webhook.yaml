@@ -50,7 +50,7 @@ spec:
       serviceAccountName: tekton-taskgroup-webhook
       containers:
       - name: webhook
-        image: ko://github.com/vdemeester/tekton-task-group/cmd/webhook
+        image: ko://github.com/openshift-pipelines/tekton-task-group/cmd/webhook
         env:
         - name: SYSTEM_NAMESPACE
           valueFrom:
