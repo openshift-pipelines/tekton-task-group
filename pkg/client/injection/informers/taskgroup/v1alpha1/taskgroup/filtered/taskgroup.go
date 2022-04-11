@@ -21,12 +21,12 @@ package filtered
 import (
 	context "context"
 
-	apistaskgroupv1alpha1 "github.com/vdemeester/tekton-task-group/pkg/apis/taskgroup/v1alpha1"
-	versioned "github.com/vdemeester/tekton-task-group/pkg/client/clientset/versioned"
-	v1alpha1 "github.com/vdemeester/tekton-task-group/pkg/client/informers/externalversions/taskgroup/v1alpha1"
-	client "github.com/vdemeester/tekton-task-group/pkg/client/injection/client"
-	filtered "github.com/vdemeester/tekton-task-group/pkg/client/injection/informers/factory/filtered"
-	taskgroupv1alpha1 "github.com/vdemeester/tekton-task-group/pkg/client/listers/taskgroup/v1alpha1"
+	apistaskgroupv1alpha1 "github.com/openshift-pipelines/tekton-task-group/pkg/apis/taskgroup/v1alpha1"
+	versioned "github.com/openshift-pipelines/tekton-task-group/pkg/client/clientset/versioned"
+	v1alpha1 "github.com/openshift-pipelines/tekton-task-group/pkg/client/informers/externalversions/taskgroup/v1alpha1"
+	client "github.com/openshift-pipelines/tekton-task-group/pkg/client/injection/client"
+	filtered "github.com/openshift-pipelines/tekton-task-group/pkg/client/injection/informers/factory/filtered"
+	taskgroupv1alpha1 "github.com/openshift-pipelines/tekton-task-group/pkg/client/listers/taskgroup/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	cache "k8s.io/client-go/tools/cache"
@@ -81,7 +81,7 @@ func Get(ctx context.Context, selector string) v1alpha1.TaskGroupInformer {
 	untyped := ctx.Value(Key{Selector: selector})
 	if untyped == nil {
 		logging.FromContext(ctx).Panicf(
-			"Unable to fetch github.com/vdemeester/tekton-task-group/pkg/client/informers/externalversions/taskgroup/v1alpha1.TaskGroupInformer with selector %s from context.", selector)
+			"Unable to fetch github.com/openshift-pipelines/tekton-task-group/pkg/client/informers/externalversions/taskgroup/v1alpha1.TaskGroupInformer with selector %s from context.", selector)
 	}
 	return untyped.(v1alpha1.TaskGroupInformer)
 }

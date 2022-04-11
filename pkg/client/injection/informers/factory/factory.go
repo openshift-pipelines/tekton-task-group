@@ -21,8 +21,8 @@ package factory
 import (
 	context "context"
 
-	externalversions "github.com/vdemeester/tekton-task-group/pkg/client/informers/externalversions"
-	client "github.com/vdemeester/tekton-task-group/pkg/client/injection/client"
+	externalversions "github.com/openshift-pipelines/tekton-task-group/pkg/client/informers/externalversions"
+	client "github.com/openshift-pipelines/tekton-task-group/pkg/client/injection/client"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 	logging "knative.dev/pkg/logging"
@@ -50,7 +50,7 @@ func Get(ctx context.Context) externalversions.SharedInformerFactory {
 	untyped := ctx.Value(Key{})
 	if untyped == nil {
 		logging.FromContext(ctx).Panic(
-			"Unable to fetch github.com/vdemeester/tekton-task-group/pkg/client/informers/externalversions.SharedInformerFactory from context.")
+			"Unable to fetch github.com/openshift-pipelines/tekton-task-group/pkg/client/informers/externalversions.SharedInformerFactory from context.")
 	}
 	return untyped.(externalversions.SharedInformerFactory)
 }

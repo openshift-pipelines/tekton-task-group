@@ -1,4 +1,4 @@
-module github.com/vdemeester/tekton-task-group
+module github.com/openshift-pipelines/tekton-task-group
 
 go 1.16
 

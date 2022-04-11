@@ -54,7 +54,7 @@ spec:
       serviceAccountName: tekton-taskgroup-controller
       containers:
       - name: tekton-taskgroup-controller
-        image: ko://github.com/vdemeester/tekton-task-group/cmd/controller
+        image: ko://github.com/openshift-pipelines/tekton-task-group/cmd/controller
         env:
         - name: SYSTEM_NAMESPACE
           valueFrom:

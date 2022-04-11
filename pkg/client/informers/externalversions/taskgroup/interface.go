@@ -19,8 +19,8 @@ limitations under the License.
 package taskgroup
 
 import (
-	internalinterfaces "github.com/vdemeester/tekton-task-group/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/vdemeester/tekton-task-group/pkg/client/informers/externalversions/taskgroup/v1alpha1"
+	internalinterfaces "github.com/openshift-pipelines/tekton-task-group/pkg/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "github.com/openshift-pipelines/tekton-task-group/pkg/client/informers/externalversions/taskgroup/v1alpha1"
 )
 
 // Interface provides access to each of this group's versions.

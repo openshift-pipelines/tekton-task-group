@@ -40,7 +40,7 @@ type TaskGroup struct {
 
 // TaskGroupSpec defines the desired state of the TaskGroup
 type TaskGroupSpec struct {
-	// FIXME(vdemeester): define a spec
+	// FIXME(openshift-pipelines): define a spec
 
 	// Params is a list of input parameters required to run the task. Params
 	// must be supplied as inputs in TaskRuns unless they declare a default
@@ -147,7 +147,7 @@ func (t TaskGroupRunReason) String() string {
 // TaskGroupRunStatus contains the status stored in the ExtraFields of a Run that references a TaskGroup.
 type TaskGroupRunStatus struct {
 	// TaskGroupSpec contains the exact spec used to instantiate the Run
-	// FIXME(vdemeester) can probably remove
+	// FIXME(openshift-pipelines) can probably remove
 	TaskGroupSpec *TaskGroupSpec `json:"taskLoopSpec,omitempty"`
 	// +optional
 	TaskRun *v1beta1.TaskRunStatus `json:"status,omitempty"`

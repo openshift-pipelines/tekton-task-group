@@ -20,11 +20,11 @@ import (
 	"github.com/tektoncd/pipeline/pkg/names"
 	"github.com/tektoncd/pipeline/pkg/reconciler/events"
 	"github.com/tektoncd/pipeline/pkg/reconciler/taskrun/resources"
-	"github.com/vdemeester/tekton-task-group/pkg/apis/taskgroup"
-	taskgroupv1alpha1 "github.com/vdemeester/tekton-task-group/pkg/apis/taskgroup/v1alpha1"
-	taskgroupclientset "github.com/vdemeester/tekton-task-group/pkg/client/clientset/versioned"
-	listerstaskgroup "github.com/vdemeester/tekton-task-group/pkg/client/listers/taskgroup/v1alpha1"
-	"github.com/vdemeester/tekton-task-group/pkg/resolve"
+	"github.com/openshift-pipelines/tekton-task-group/pkg/apis/taskgroup"
+	taskgroupv1alpha1 "github.com/openshift-pipelines/tekton-task-group/pkg/apis/taskgroup/v1alpha1"
+	taskgroupclientset "github.com/openshift-pipelines/tekton-task-group/pkg/client/clientset/versioned"
+	listerstaskgroup "github.com/openshift-pipelines/tekton-task-group/pkg/client/listers/taskgroup/v1alpha1"
+	"github.com/openshift-pipelines/tekton-task-group/pkg/resolve"
 	"go.uber.org/zap"
 	"gomodules.xyz/jsonpatch/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -230,7 +230,7 @@ func (c *Reconciler) getTaskGroup(ctx context.Context, logger *zap.SugaredLogger
 		taskGroupMeta = tl.ObjectMeta
 		taskGroupSpec = tl.Spec
 	} else if run.Spec.Spec != nil {
-		// FIXME(vdemeester) support embedded spec
+		// FIXME(openshift-pipelines) support embedded spec
 		if err := json.Unmarshal(run.Spec.Spec.Spec.Raw, &taskGroupSpec); err != nil {
 			run.Status.MarkRunFailed(taskgroupv1alpha1.TaskGroupRunReasonCouldntGetTaskGroup.String(),
 				"Error retrieving TaskGroup for Run %s/%s: %s",

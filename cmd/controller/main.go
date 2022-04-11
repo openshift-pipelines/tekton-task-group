@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 
-	"github.com/vdemeester/tekton-task-group/pkg/apis/taskgroup/v1alpha1"
-	"github.com/vdemeester/tekton-task-group/pkg/reconciler/taskgroup"
+	"github.com/openshift-pipelines/tekton-task-group/pkg/apis/taskgroup/v1alpha1"
+	"github.com/openshift-pipelines/tekton-task-group/pkg/reconciler/taskgroup"
 	corev1 "k8s.io/api/core/v1"
 	filteredinformerfactory "knative.dev/pkg/client/injection/kube/informers/factory/filtered"
 	"knative.dev/pkg/injection"

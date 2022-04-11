@@ -19,9 +19,9 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/vdemeester/tekton-task-group/pkg/client/clientset/versioned"
-	customv1alpha1 "github.com/vdemeester/tekton-task-group/pkg/client/clientset/versioned/typed/taskgroup/v1alpha1"
-	fakecustomv1alpha1 "github.com/vdemeester/tekton-task-group/pkg/client/clientset/versioned/typed/taskgroup/v1alpha1/fake"
+	clientset "github.com/openshift-pipelines/tekton-task-group/pkg/client/clientset/versioned"
+	customv1alpha1 "github.com/openshift-pipelines/tekton-task-group/pkg/client/clientset/versioned/typed/taskgroup/v1alpha1"
+	fakecustomv1alpha1 "github.com/openshift-pipelines/tekton-task-group/pkg/client/clientset/versioned/typed/taskgroup/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

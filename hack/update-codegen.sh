@@ -38,14 +38,14 @@ GOFLAGS="-mod=vendor"
 # not having dependency cycle.
 # This generates deepcopy,client,informer and lister for the pipeline package (v1alpha1 and v1beta1)
 bash ${REPO_ROOT_DIR}/hack/generate-groups.sh "deepcopy,client,informer,lister" \
-  github.com/vdemeester/tekton-task-group/pkg/client github.com/vdemeester/tekton-task-group/pkg/apis \
+  github.com/openshift-pipelines/tekton-task-group/pkg/client github.com/openshift-pipelines/tekton-task-group/pkg/apis \
   "taskgroup:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
 # Knative Injection
 # This generates the knative injection packages for the resource package (v1alpha1).
 bash ${REPO_ROOT_DIR}/hack/generate-knative.sh "injection" \
-  github.com/vdemeester/tekton-task-group/pkg/client github.com/vdemeester/tekton-task-group/pkg/apis \
+  github.com/openshift-pipelines/tekton-task-group/pkg/client github.com/openshift-pipelines/tekton-task-group/pkg/apis \
   "taskgroup:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 GOFLAGS="${OLDGOFLAGS}"
