@@ -40,8 +40,6 @@ type TaskGroup struct {
 
 // TaskGroupSpec defines the desired state of the TaskGroup
 type TaskGroupSpec struct {
-	// FIXME(openshift-pipelines): define a spec
-
 	// Params is a list of input parameters required to run the task. Params
 	// must be supplied as inputs in TaskRuns unless they declare a default
 	// value.
@@ -81,6 +79,10 @@ type Step struct {
 
 	// +optional
 	Uses *Uses `json:"uses"`
+}
+
+func (s Step) toUpstream() v1beta1.Step {
+	return s.Step
 }
 
 type Uses struct {
