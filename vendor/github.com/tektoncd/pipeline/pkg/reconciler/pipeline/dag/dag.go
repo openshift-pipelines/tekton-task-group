@@ -197,7 +197,7 @@ func findSchedulable(n *Node, visited sets.String, doneTasks sets.String) []Task
 	}
 	// This one isn't done! Return it if it's schedulable
 	if isSchedulable(doneTasks, n.Prev) {
-		// FIXME(openshift-pipelines)
+		// FIXME(vdemeester)
 		return []Task{n.Task}
 	}
 	// This one isn't done, but it also isn't ready to schedule
