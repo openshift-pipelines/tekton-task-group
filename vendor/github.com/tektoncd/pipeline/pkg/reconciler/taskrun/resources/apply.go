@@ -45,7 +45,7 @@ func ApplyParameters(spec *v1beta1.TaskSpec, tr *v1beta1.TaskRun, defaults ...v1
 		"params.%s",
 		"params[%q]",
 		"params['%s']",
-		// FIXME(openshift-pipelines) Remove that with deprecating v1beta1
+		// FIXME(vdemeester) Remove that with deprecating v1beta1
 		"inputs.params.%s",
 	}
 
@@ -85,7 +85,7 @@ func ApplyResources(spec *v1beta1.TaskSpec, resolvedResources map[string]v1beta1
 	for name, r := range resolvedResources {
 		for k, v := range r.Replacements() {
 			replacements[fmt.Sprintf("resources.%s.%s.%s", replacementStr, name, k)] = v
-			// FIXME(openshift-pipelines) Remove that with deprecating v1beta1
+			// FIXME(vdemeester) Remove that with deprecating v1beta1
 			replacements[fmt.Sprintf("%s.resources.%s.%s", replacementStr, name, k)] = v
 		}
 	}
@@ -94,14 +94,14 @@ func ApplyResources(spec *v1beta1.TaskSpec, resolvedResources map[string]v1beta1
 	if spec.Resources != nil && spec.Resources.Inputs != nil {
 		for _, r := range spec.Resources.Inputs {
 			replacements[fmt.Sprintf("resources.inputs.%s.path", r.Name)] = v1beta1.InputResourcePath(r.ResourceDeclaration)
-			// FIXME(openshift-pipelines) Remove that with deprecating v1beta1
+			// FIXME(vdemeester) Remove that with deprecating v1beta1
 			replacements[fmt.Sprintf("inputs.resources.%s.path", r.Name)] = v1beta1.InputResourcePath(r.ResourceDeclaration)
 		}
 	}
 	if spec.Resources != nil && spec.Resources.Outputs != nil {
 		for _, r := range spec.Resources.Outputs {
 			replacements[fmt.Sprintf("resources.outputs.%s.path", r.Name)] = v1beta1.OutputResourcePath(r.ResourceDeclaration)
-			// FIXME(openshift-pipelines) Remove that with deprecating v1beta1
+			// FIXME(vdemeester) Remove that with deprecating v1beta1
 			replacements[fmt.Sprintf("outputs.resources.%s.path", r.Name)] = v1beta1.OutputResourcePath(r.ResourceDeclaration)
 		}
 	}

@@ -59,7 +59,7 @@ func checkStepNotAlreadyAdded(s Step, steps []Step) error {
 // If steps with the same name exist in ts an error will be returned. If identical Volumes have
 // been added, they will not be added again. If Volumes with the same name but different contents
 // have been added, an error will be returned.
-// FIXME(openshift-pipelines) de-duplicate this
+// FIXME(vdemeester) de-duplicate this
 func ApplyTaskModifier(ts *TaskSpec, tm TaskModifier) error {
 	steps := tm.GetStepsToPrepend()
 	for _, step := range steps {
