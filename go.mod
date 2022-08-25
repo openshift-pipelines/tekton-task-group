@@ -15,7 +15,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/tektoncd/pipeline v0.34.1
 	github.com/tektoncd/plumbing v0.0.0-20211012143332-c7cc43d9bc0c
-	go.uber.org/zap v1.22.0
+	go.uber.org/zap v1.23.0
 	gomodules.xyz/jsonpatch/v2 v2.2.0
 	k8s.io/api v0.23.4
 	k8s.io/apimachinery v0.23.4
