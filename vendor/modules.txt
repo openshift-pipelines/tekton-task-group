@@ -395,7 +395,7 @@ go.uber.org/automaxprocs/internal/runtime
 go.uber.org/automaxprocs/maxprocs
 # go.uber.org/multierr v1.7.0
 go.uber.org/multierr
-# go.uber.org/zap v1.23.0
+# go.uber.org/zap v1.24.0
 ## explicit
 go.uber.org/zap
 go.uber.org/zap/buffer
